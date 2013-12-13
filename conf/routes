@@ -1,0 +1,32 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Home page
+GET     /                           		controllers.Application.index
+GET     /expenses/:year                     controllers.Application.expensesIndex(year: Int)
+GET     /expense/new                        controllers.Application.expensesNewForm
+GET     /expense/:id/status/:status         controllers.Application.convertTo(id: String, status: String)
+GET 	/expense/delete						controllers.Application.expensesDelete(id: String)
+GET     /expense/:id                        controllers.Application.expensesShow(id: String)
+POST 	/expense/new						controllers.Application.expensesNew()
+POST 	/expense/:id/comment				controllers.Application.addComment(id: String)
+GET  	/expense/:id/:commentId/delete		controllers.Application.deleteComment(id: String, commentId: String)
+POST    /expense/:id 						controllers.Application.expensesEdit(id: String)
+
+GET     /login		               	controllers.Application.login()
+GET     /authenticate               controllers.Application.authenticate()
+GET     /callback                	controllers.Application.callback()
+GET     /logout		               	controllers.Application.logout()
+
+
+GET     /recurring                          controllers.Application.recurringIndex
+GET     /recurring/new                      controllers.Application.recurringNewForm
+POST 	/recurring/new 						controllers.Application.recurringNew
+GET     /recurring/delete                   controllers.Application.recurringDelete(id: String)
+GET     /recurring/:id                      controllers.Application.recurringShow(id: String)
+POST    /recurring/:id 						controllers.Application.recurringEdit(id: String)
+
+
+# Map static resources from the /public folder to the /assets URL path
+GET     /assets/*file               		controllers.Assets.at(path="/public", file)

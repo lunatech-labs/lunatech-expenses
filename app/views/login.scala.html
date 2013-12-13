@@ -1,0 +1,45 @@
+@()(implicit flash: play.api.mvc.Flash)
+
+@main("Login") {
+
+  
+ <div id="Wrapper">
+    <div id="Container">
+        <div class="left">
+            <div class="col">
+                <div class="chat-wrapper">
+                    @flash.get("success").map { message =>
+                        <div class="alert alert-info">
+                             @message
+                        </div>
+                    }
+
+                    @flash.get("error").map { message =>
+                        <div class="alert alert-error">
+                             @message
+                        </div>
+                    }
+
+                    <form  style="padding: 20px; margin-top: 100px; text-align: center; min-height: 400px">
+
+
+                        <h2>Expense Application</h2>
+
+                        <p class="description">You must be a Lunatech employee with a valid google account to use this software. <br/>
+                            </p>
+
+
+                        <a href="@routes.Application.authenticate()">Sign in</a>
+
+                    </form>
+                </div>
+            </div>
+        </div>       
+    </div>
+</div>
+
+}
+
+
+
+           

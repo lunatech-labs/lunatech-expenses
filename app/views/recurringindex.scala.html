@@ -1,0 +1,62 @@
+@(username: String, expenses: Seq[RecurringExpense])(implicit flash: play.api.mvc.Flash)
+
+@main("") {
+<header class="navbar navbar-fixed-top">
+  <nav>
+  	<ul class="nav nav-tabs">
+      <li class=""><a href="@routes.Application.index()">Expenses summary</a></li>
+      <li class="active" ><a href="@routes.Application.recurringIndex()" >Recurring expenses</a></li>
+      <li style="float: right;" class="logout"><a href="/logout">Sign out</a></li>
+      <li style="float: right;" class="signedin">Signed in as @username</li>
+    </ul>
+ </nav>
+</header>
+  
+ <div id="Wrapper">
+    <div id="Container">
+	    <div class="left">
+	        <div class="col">
+	            <div class="chat-wrapper">
+	            	<h3>Recurring expenses</h3>
+	            	@flash.get("success").map { message =>
+                        <div class="alert alert-info">
+                             @message
+                        </div>
+                    }
+
+                    @flash.get("error").map { message =>
+                        <div class="alert alert-error">
+                             @message
+                        </div>
+                    }
+	            	  <table class="table table-hover">
+				        <thead>
+				          <tr>
+				            <th>#</th>
+				            <th>Description</th>
+				            <th class="right">Amount (BTW incl.)</th>
+				            <th>Frequence</th>
+				          </tr>
+				        </thead>
+				        <tbody>
+				        @expenses.zipWithIndex.map { case (expense, index) =>
+ 						  <tr>
+				            <td class="number">@(index+1)</td>
+				            <td><a href="@routes.Application.recurringShow(expense.id.get.stringify)">@expense.description</a></td>
+				            <td class="right">@expense.amount €</td>
+				            <td>@expense.frequence</td>
+				          </tr>
+ 						}				        
+				        </tbody>
+				      </table>
+	            </div>
+	        </div>
+	    </div>
+	     <div class="sidebar" >
+	    	<div class="button"><a href="@routes.Application.recurringNew()" class="btn btn-primary" role="button">New recurring expenses</a></div>
+        </div>
+               
+	</div>
+</div>
+
+}
