@@ -64,6 +64,20 @@ object Application extends Controller with MongoController with Secured {
     }
   }
 
+  def expensesToReview() = IsAuthenticated { (username, lastname)  => implicit request =>
+    Async {
+      val query = BSONDocument(
+        "$query" -> BSONDocument("status" -> "submitted"),
+        "$orderby" -> BSONDocument("start_date" -> -1))
+     
+      val found = expenses.find(query).cursor[Expense]
+      found.toList().map { expenses =>
+        Ok(views.html.expensestoreview(username, expenses))
+      }
+    }
+  }
+
+  // TODO: Check that the user is allow to see the expenses. Only the author and the reviewer can see the expense.
   def expensesShow(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
     Async {
       val objectId = new BSONObjectID(id)
@@ -503,6 +517,14 @@ object Application extends Controller with MongoController with Secured {
 
 }
 
+object Secure {
+
+  def isAdministrator(email: String) = {
+    import play.api.Play.current
+    Play.configuration.getString("administrators").getOrElse("").contains(email)
+  }
+
+}
 
 /**
  * Provide security features
@@ -522,6 +544,7 @@ trait Secured {
     Results.Redirect(routes.Application.login).withSession("originalUrl" -> request.uri)
   }
 
+
   // --
 
   /**
@@ -536,6 +559,9 @@ trait Secured {
     val CONSUMER_KEY = Play.configuration.getString("google.key")
     val CONSUMER_SECRET =  Play.configuration.getString("google.secret")
     val DOMAIN =  Play.configuration.getString("google.domain")
+
+    // Comma separated google email outside the lunatech organisation
+    val WHITELIST = Play.configuration.getString("whitelist").getOrElse("")
 
     val oauthParameters = new GoogleOAuthParameters()
     oauthParameters.setOAuthConsumerKey(CONSUMER_KEY.get)
@@ -553,7 +579,7 @@ trait Secured {
     val users =  resultFeed.getEntries.toSet
     val filteredUsers = users.map( entry => entry.getTitle().getPlainText() + "@" + DOMAIN.get)
 
-    filteredUsers.contains(email)
+    filteredUsers.contains(email) || WHITELIST.contains(email)
   }
 
 }

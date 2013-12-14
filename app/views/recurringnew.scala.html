@@ -1,17 +1,7 @@
 @(username: String, lastname: String, expense: Form[RecurringExpense])(implicit flash: play.api.mvc.Flash)
 
 @main("") {
-<header class="navbar navbar-fixed-top">
-  <nav>
-  	<ul class="nav nav-tabs">
-      <li class=""><a href="@routes.Application.index()">Expenses summary</a></li>
-      <li class="active" ><a href="@routes.Application.recurringIndex()" >Recurring expenses</a></li>
-      <li style="float: right;" class="logout"><a href="/logout">Sign out</a></li>
-      <li style="float: right;" class="signedin">Signed in as @username</li>
-    </ul>
- </nav>
-</header>
-  
+@menu(username, "recurring")
  <div id="Wrapper">
     <div id="Container">
 	    <div class="left">

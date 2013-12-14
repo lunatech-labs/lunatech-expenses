@@ -1,8 +1,8 @@
-@(username: String, expenses: Seq[Expense], year: Int)(implicit flash: play.api.mvc.Flash)
+@(username: String, expenses: Seq[Expense])(implicit flash: play.api.mvc.Flash)
 
 @import utils._
 @main("") {
-@menu(username, "expenses")
+@menu(username, "review")
 
   
  <div id="Wrapper">
@@ -10,7 +10,7 @@
 	    <div class="left">
 	        <div class="col">
 	            <div class="chat-wrapper">
-	            	<h3>Expenses @year</h3>
+	            	<h3>Expenses to review</h3>
 	            	 @flash.get("success").map { message =>
                         <div class="alert alert-info">
                              @message
@@ -22,19 +22,12 @@
                              @message
                         </div>
                     }
-	            	<div>
-	            		<ul class="pagination">
-						  <li><a href="@routes.Application.expensesIndex(year+1)"><i class="fa fa-chevron-left"></i></a></li>
-						  <li><a href="">@year</a></li>
-						  <li><a href="@routes.Application.expensesIndex(year-1)"><i class="fa fa-chevron-right"></i></a></li>
-						</ul>
-	            	</div>
-		              <table class="table table-hover">
+	            	  <table class="table table-hover">
 				        <thead>
 				          <tr>
 				            <th>#</th>
 				            <th>Period</th>
-				            <th>Reference</th>
+				            <th>Author</th>
 				            <th class="right">Amount (BTW incl.)</th>
 				            <th>Status</th>
 				          </tr>
@@ -45,7 +38,7 @@
  						   <tr>
 				            <td class="number">@(index+1)</td>
 				            <td><a href="@routes.Application.expensesShow(expense.id.get.stringify)">@Time.ordinal(expense.startDate) @expense.startDate.toString("MMM. yyyy") - @Time.ordinal(expense.endDate) @expense.endDate.toString("MMM. yyyy")</a></td>
-				            <td><a href="@routes.Application.expensesShow(expense.id.get.stringify)">@expense.reference</a></td>
+				            <td><a href="@routes.Application.expensesShow(expense.id.get.stringify)">@expense.author</a></td>
 				            <td class="right"><a href="@routes.Application.expensesShow(expense.id.get.stringify)">@expense.totalAmount €</a></td>
 				            <td>@(expense.status match { 
 				            	case "draft" => <span class="label label-default">draft</span>
@@ -59,17 +52,7 @@
 	            </div>
 	        </div>
 	    </div>
-	    <div class="sidebar" >
-	    	<div class="button"><a href="@routes.Application.expensesNewForm()" class="btn btn-primary" role="button">New expenses</a></div>
-    		<div>
-              <h3><a href="">Related actions</a></h3>
-              <ul class="related-actions">
-            	<li><i class="fa fa-download"></i> <a data-toggle="modal" data-target="#myModal">Import expenses</a></li>
-            	<li><i class="fa fa-upload"></i> <a data-toggle="modal" data-target="#myModal">Export expenses</a></li>
-              </ul>
-            </div>
-        </div>
-
+	    
          <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 		  <div class="modal-dialog">
 		    <div class="modal-content">

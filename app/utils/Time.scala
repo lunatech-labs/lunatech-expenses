@@ -25,5 +25,6 @@ object Time {
       import java.security.MessageDigest
       MessageDigest.getInstance("MD5").digest(s.getBytes).map("%02X".format(_)).mkString.toLowerCase
   }
+  
 
 }

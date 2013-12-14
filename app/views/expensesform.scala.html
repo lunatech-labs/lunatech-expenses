@@ -2,16 +2,7 @@
 @import utils._
 @import org.joda.time.DateTime
 @main("") {
-<header class="navbar navbar-fixed-top">
-  <nav>
-  	<ul class="nav nav-tabs">
-      <li class=""><a href="@routes.Application.index()">Expenses summary</a></li>
-      <li class="" ><a href="@routes.Application.recurringIndex()" >Recurring expenses</a></li>
-      <li style="float: right;" class="logout"><a href="/logout">Sign out</a></li>
-      <li style="float: right;" class="signedin">Signed in as @username</li>
-    </ul>
- </nav>
-</header>
+@menu(username, "expenses")
   
  <div id="Wrapper">
     <div id="Container">
