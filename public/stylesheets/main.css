@@ -224,3 +224,7 @@ table.edit tr.total td:hover {
 	line-height: 35px;
 }
 
+.validationerror {
+	padding-left: 6px;
+	color: rgb(236, 64, 64);
+}

@@ -84,15 +84,66 @@
 					         }
 
 					         <script>
+
+					         	function isValidDate(dateString) {
+								    // First check for the pattern
+								    if(!/^\d{2}\/\d{2}\/\d{4}$/.test(dateString))
+								        return false;
+								    // Parse the date parts to integers
+								    var parts = dateString.split("/");
+								    var day = parseInt(parts[0], 10);
+								    var month = parseInt(parts[1], 10);
+								    var year = parseInt(parts[2], 10);
+								 
+								    // Check the ranges of month and year
+								    if(year < 1000 || year > 3000 || month == 0 || month > 12)
+								        return false;
+								 
+
+								    var monthLength = [ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ];
+
+								    // Adjust for leap years
+								    if(year % 400 == 0 || (year % 100 != 0 && year % 4 == 0))
+								        monthLength[1] = 29;
+								 
+
+								    // Check the range of the day
+								    return day > 0 && day <= monthLength[month - 1];
+								};
+
 					         	function addItem() {
 					         		// Add a new row of item based on the one that the user filled in
 					         		// TODO: VALIDATION
-					         		var date = $('#date').val()
-					         		var description = $('#description').val()
+					         		$(".validationerror").remove();
+					         		var date = $('#date').val().trim()
+					         		var description = $('#description').val().trim()
 					         		var amount = parseFloat($('#amount').val()).toFixed(2)
 					         		var comment = $('#comment').val()
 					         		var number = $('#items').children().size() - 2
-					         		console.log("number " + number)
+
+					         		// Do we have a valid date?
+					         		var validationerror = false
+					         		
+									if (!isValidDate(date)) {
+										$("#date").parent().append("<span class='validationerror'>Invalid date</span>")
+										validationerror = true
+									}
+
+									if (!description == null || description =='' ) {
+										$("#description").parent().append("<span class='validationerror'>Description is required</span>")
+										validationerror = true
+									}
+
+					         		// Do we have a valid amount?
+					         		var floatRegex = '([0-9]*\.[0-9]+|[0-9]+)'; 
+									if (!amount.match(floatRegex)) {
+										$("#amount").parent().append("<span class='validationerror'>Invalid</span>")
+										validationerror = true
+									}
+
+									if (validationerror) 
+										return false
+
 					         		// Add a new row to the table
 					         		$('#addItem').before('<tr><td class="number">' + number + '</td><td>' + moment(date, "DD/MM/YYYY").format("Do MMM. YYYY") + '</td><td>' + description + '</td><td class="amount right">' + amount + ' €</td><td>' + comment + '</td> <td><a class="delete" onclick="$(this).parent().parent().hide(\'slow\', function() {$(this).remove();updateTotal();reorder();});"><i class="fa fa-trash-o"></i> Delete</a><input name="items[' + number + '].name" type="hidden" value="' + description + '"><input name="items[' + number + '].amount" type="hidden" value="'+ amount + '"><textarea name="items[' + number + '].note" style="display:none" >' + comment + '</textarea><input name="items[' + number + '].date" type="hidden" value="' + moment(date, "DD/MM/YYYY") + '"></td>')
 					         		$('#date').val('')
