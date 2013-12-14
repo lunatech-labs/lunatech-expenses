@@ -199,12 +199,19 @@ object Application extends Controller with MongoController with Secured {
         val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
         
         futureExpense.flatMap { expense =>
-          expenses.remove(BSONDocument("_id" -> objectId)).map { lastError =>
-            Redirect(routes.Application.expensesIndex(expense.get.startDate.getYear)).flashing("success" -> "Expense has been deleted")
-          }
+
+          gridFS.find(BSONDocument("expenses" -> new BSONObjectID(id))).toList().flatMap { files =>
+              val deletions = files.map { file =>
+                gridFS.remove(file)
+              }
+              Future.sequence(deletions)
+            }.flatMap { _ =>
+              expenses.remove(BSONDocument("_id" -> new BSONObjectID(id)))
+            }.map(_ => Redirect(routes.Application.expensesIndex(expense.get.startDate.getYear)).flashing("success" -> "Expense has been deleted")).recover { case _ => InternalServerError }
+          }          
         }
       }
-  }     
+       
  
   def expensesEdit(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
      expenseForm.bindFromRequest.fold(
@@ -368,7 +375,6 @@ object Application extends Controller with MongoController with Secured {
    
      recurringForm.bindFromRequest.fold(
       errors => {
-        println(errors)
         BadRequest(views.html.recurringnew(username, lastname, errors))
       },
       expense => Async {
@@ -413,7 +419,6 @@ object Application extends Controller with MongoController with Secured {
 
   // TODO: This should be secured
   def saveAttachments(id: String) = Action(gridFSBodyParser(gridFS))  {  implicit request =>
-    println("files " + request.body.files + " " + id)
     val futureFile = request.body.files.head.ref
     val futureUpdate = for {
       file <- futureFile
