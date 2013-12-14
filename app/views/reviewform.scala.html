@@ -1,0 +1,179 @@
+@(username: String, lastname: String, startDate: org.joda.time.DateTime, endDate: org.joda.time.DateTime, expense: Form[Expense], items: Seq[Item], comments: Seq[Comment],files: Option[List[(String, reactivemongo.api.gridfs.ReadFile[reactivemongo.bson.BSONValue])]] = None)(implicit flash: play.api.mvc.Flash)
+@import utils._
+@import org.joda.time.DateTime
+@main("") {
+@menu(username, "review")
+  
+ <div id="Wrapper">
+    <div id="Container">
+	    <div class="left">
+	        <div class="col">
+	            <div class="chat-wrapper">
+
+	            <div class="pull-right"><h3>@(expense("status").value.getOrElse("") match { 
+	            	case "draft" => <span class="label label-default">draft</span>
+	            	case "submitted" => <span class="label label-info">submitted</span>
+	            	case "approved" => <span class="label label-success">approved</span>
+	            	case "rejected" => <span class="label label-warning">rejected</span>
+	            	case _ => <span class="label label-warning">?</span>
+	            })</h3></div>
+		           
+	            	<h3 style="font-variant: small-caps">Expenses from @expense("author").value</h3>
+	            	@flash.get("success").map { message =>
+                        <div class="alert alert-info">
+                             @message
+                        </div>
+                    }
+
+                    @flash.get("error").map { message =>
+                        <div class="alert alert-error">
+                             @message
+                        </div>
+                    }
+
+	            	<form id="edit" action="@routes.Application.expensesEdit(expense("id").value.getOrElse(""))" method="POST">
+
+						<input type="hidden" value="@expense("id").value" name="id"/>
+	            		<input id="startDate" type="hidden" value="@expense("startDate").value" name="startDate"/>
+	            		<input id="endDate" type="hidden" value="@expense("endDate").value" name="endDate"/>
+	            		<input type="hidden" value="@expense("author").value" name="author"/>
+	            		<input type="hidden" value="@expense("status").value" name="status"/>
+	            	
+	            		<h4 class="timeline"><span id="start">@Time.ordinal(startDate) @startDate.toString("MMM. yyyy") </span>- <span id="end">@Time.ordinal(endDate) @endDate.toString("MMM. yyyy") </span></h4>
+		            	<div style="margin: 50px 0 20px">
+		            			<h3>@expense("reference").value</h3>
+		            	</div>
+		            	   <table class="table edit">
+					        <thead>
+					          <tr>
+					            <th>#</th>
+					            <th>Date</th>
+					            <th>Item</th>
+					            <th class="right">Amount (BTW incl.)</th>
+					            <th>Notes</th>
+					            <th></th>
+					          </tr>
+					        </thead>
+					        <tbody id="items">
+					          @items.zipWithIndex.map { case (item, index) =>
+	 						   <tr>
+					            <td class="number">@(index+1)</td>
+					            <td>@Time.ordinal(item.date) @item.date.toString("MMM. yyyy") </td>
+					            <td>@item.name</td>
+					            <td class="amount right">@item.amount €</td>
+					            <td>@item.note</td>
+					            <td></td>
+	            			   </tr>
+					         }
+
+					        
+					        </tbody>
+					      </table>
+
+					      
+	                  </form>
+
+	                  <h3 class="comment"><span id="number_comment">@(comments.size)</span> Comments</h3>
+				      <div class="comment comment-panel">
+
+				      @comments.zipWithIndex.map { case (comment, index) =>
+					    <div class="@if((index + 1) == comments.size) {last-comment commentbody} else {comment commentbody}">
+							  <div class="comment-heading">
+							  	<img src="http://www.gravatar.com/avatar/@Time.md5(comment.email)?d=mm&amp;s=36" /> <span>@comment.author</span><small style="position:relative;  padding-left: 10px;font-weight:normal">- @Time.timeAgo(comment.date)</small></div>
+								  <div class="comment-body">
+								   @comment.content
+								  </div>
+							  <!-- TODO: limit the delete to the user that wrote the comment and add reply to the last comment only -->	
+							  <div class="action" style="font-size: 11px; margin-right:20px; text-align: right">@if((index + 1) == comments.size){<a onclick="$('#reply').slideToggle();">Reply</a> • }@if(username == comment.email){<a href="@routes.Application.deleteComment(expense("id").value.getOrElse(""), comment.id.getOrElse(""))" onclick="$(this).parent().parent().hide('slow', function() {$(this).remove(); })">Delete</a>}</div>
+					
+	 					</div>
+	 				    }
+	 					@if(comments.isEmpty) {
+	 					 <div class="action" style="font-size: 11px; margin-right:20px; text-align: right"><a onclick="$('#reply').slideToggle();">Add Comment</a></div>
+					
+	 					}
+						 <form id="reply" style="display:none" action="@routes.Application.addComment(expense("id").value.getOrElse(""))" method="POST">
+				     		<div class="form-group">
+						    	<div class="">
+						    		<input type="hidden" name="author" value="@lastname"/>
+						    		<input type="hidden" name="email" value="@username"/>
+						     		
+						     		<img src="http://www.gravatar.com/avatar/@utils.Time.md5(username)?d=mm&s=36" /><textarea name="content" class="comment" rows="4" placeholder="Write a comment"></textarea>
+						    	</div>
+						  	</div>
+						  	<div class="form-group" style="text-align: right">
+						  		<button class="btn btn-primary" role="button">Save</button> Or <a  style="margin-right: 20px" onclick="$('#reply').slideToggle();">Cancel</a>
+						  	</div>
+						</form>
+					</div>	 
+	            </div>
+	        </div>
+	    </div>
+	   <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		  <div class="modal-dialog">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+		        <h4 class="modal-title">Not yet implemented</h4>
+		      </div>
+		      <div class="modal-body">
+		        <p>Fee free to contribute to the project ;) 
+		        </p>
+		      </div>
+		      <div class="modal-footer">
+		        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+		      </div>
+		    </div><!-- /.modal-content -->
+		  </div><!-- /.modal-dialog -->
+		</div><!-- /.modal -->
+
+		<div class="modal fade" id="deleteModal">
+		  <div class="modal-dialog">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+		        <h4 class="modal-title">Delete the expense form</h4>
+		      </div>
+		      <div class="modal-body">
+		        <p>Are you sure you want to delete this expense form?</p>
+		      </div>
+		      <div class="modal-footer">
+		        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+		        <a href="@routes.Application.expensesDelete(expense("id").value.getOrElse(""))"  class="btn btn-primary">Ok, delete it</a>
+		      </div>
+		    </div><!-- /.modal-content -->
+		  </div><!-- /.modal-dialog -->
+		</div><!-- /.modal -->
+		<script>
+		$("div.modal-body").emoticonize();
+		</script>
+	    <div class="sidebar" >
+	    	 <div class="button"><a class="btn btn-primary" role="button" onclick="$('#edit').submit()">Save</a> or <a href="@routes.Application.expensesIndex(startDate.getYear)">Cancel</a> </div>
+    		<div>
+              <h3><a href="">Related actions</a></h3>
+              <ul class="related-actions">
+            	<li><i class="fa fa-print"></i> <a data-toggle="modal" data-target="#myModal">Print expenses form</a></li>
+            	<li><i class="fa fa-check-square-o"></i> <a href="@routes.Application.convertTo(expense("id").value.getOrElse("") ,"approved")">Approve this expense</a></li>
+            	<li><i class="fa fa-check-square-o"></i> <a href="@routes.Application.convertTo(expense("id").value.getOrElse("") ,"rejected")">Reject this expense</a></li>
+            	
+              </ul>
+            </div>
+            <div>
+              <h3><a href="">Receipts</a></h3>
+             
+		      
+              <ul id="receipts" class="related-actions files ">
+			    @if(files.isDefined) {
+			      @files.get.map { file =>
+			      <li class="done"><i class="fa fa-file-o"></i> <a href="@routes.Application.getAttachment(file._1)">@file._2.filename</a> </li>
+			      }
+			    }
+     </ul>
+              
+            </div>
+        </div>
+               
+	</div>
+</div>
+
+}

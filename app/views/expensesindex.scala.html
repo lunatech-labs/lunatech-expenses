@@ -50,6 +50,9 @@
 				            <td>@(expense.status match { 
 				            	case "draft" => <span class="label label-default">draft</span>
 	            				case "submitted" => <span class="label label-info">submitted</span>
+	            				case "approved" => <span class="label label-success">approved</span>
+	            				case "rejected" => <span class="label label-warning">rejected</span>
+	            				case _ => <span class="label label-warning">?</span>
 	            			})</span></td>
 				          </tr>
 				         }

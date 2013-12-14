@@ -37,9 +37,9 @@
 				         @expenses.zipWithIndex.map { case (expense, index) =>
  						   <tr>
 				            <td class="number">@(index+1)</td>
-				            <td><a href="@routes.Application.expensesShow(expense.id.get.stringify)">@Time.ordinal(expense.startDate) @expense.startDate.toString("MMM. yyyy") - @Time.ordinal(expense.endDate) @expense.endDate.toString("MMM. yyyy")</a></td>
-				            <td><a href="@routes.Application.expensesShow(expense.id.get.stringify)">@expense.author</a></td>
-				            <td class="right"><a href="@routes.Application.expensesShow(expense.id.get.stringify)">@expense.totalAmount €</a></td>
+				            <td><a href="@routes.Application.review(expense.id.get.stringify)">@Time.ordinal(expense.startDate) @expense.startDate.toString("MMM. yyyy") - @Time.ordinal(expense.endDate) @expense.endDate.toString("MMM. yyyy")</a></td>
+				            <td><a href="@routes.Application.review(expense.id.get.stringify)">@expense.author</a></td>
+				            <td class="right"><a href="@routes.Application.review(expense.id.get.stringify)">@expense.totalAmount €</a></td>
 				            <td>@(expense.status match { 
 				            	case "draft" => <span class="label label-default">draft</span>
 	            				case "submitted" => <span class="label label-info">submitted</span>

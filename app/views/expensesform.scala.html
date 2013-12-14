@@ -13,6 +13,8 @@
 	            <div class="pull-right"><h3>@(expense("status").value.getOrElse("") match { 
 	            	case "draft" => <span class="label label-default">draft</span>
 	            	case "submitted" => <span class="label label-info">submitted</span>
+	            	case "approved" => <span class="label label-success">approved</span>
+	            	case "rejected" => <span class="label label-warning">rejected</span>
 	            	case _ => <span class="label label-warning">?</span>
 	            })</h3></div>
 		           
@@ -35,6 +37,7 @@
 	            		<input id="startDate" type="hidden" value="@expense("startDate").value" name="startDate"/>
 	            		<input id="endDate" type="hidden" value="@expense("endDate").value" name="endDate"/>
 	            		<input type="hidden" value="@expense("author").value" name="author"/>
+	            		<input type="hidden" value="@expense("email").value" name="email"/>
 	            		<input type="hidden" value="@expense("status").value" name="status"/>
 	            	
 	            		<h4 class="timeline"><span id="start">@Time.ordinal(startDate) @startDate.toString("MMM. yyyy") </span>@if(expense("status").value.getOrElse("") == "draft") { <span id="editStart" class="edit"><a >edit</a></span>}- <span id="end">@Time.ordinal(endDate) @endDate.toString("MMM. yyyy") </span>@if(expense("status").value.getOrElse("") == "draft") { <span id="editEnd" class="edit"><a >edit</a></span>}</h4>

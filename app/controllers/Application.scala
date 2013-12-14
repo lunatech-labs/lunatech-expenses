@@ -54,7 +54,7 @@ object Application extends Controller with MongoController with Secured {
   def expensesIndex(year: Int) = IsAuthenticated { (username, lastname)  => implicit request =>
     Async {
       val query = BSONDocument(
-        "$query" -> BSONDocument("author" -> username, "year" -> year),
+        "$query" -> BSONDocument("email" -> username, "year" -> year),
         "$orderby" -> BSONDocument("year" -> -1))
      
       val found = expenses.find(query).cursor[Expense]
@@ -64,7 +64,7 @@ object Application extends Controller with MongoController with Secured {
     }
   }
 
-  def expensesToReview() = IsAuthenticated { (username, lastname)  => implicit request =>
+  def reviewIndex() = IsAuthenticated { (username, lastname)  => implicit request =>
     Async {
       val query = BSONDocument(
         "$query" -> BSONDocument("status" -> "submitted"),
@@ -72,10 +72,33 @@ object Application extends Controller with MongoController with Secured {
      
       val found = expenses.find(query).cursor[Expense]
       found.toList().map { expenses =>
-        Ok(views.html.expensestoreview(username, expenses))
+        Ok(views.html.reviewindex(username, expenses))
       }
     }
   }
+
+ def review(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
+    Async {
+      val objectId = new BSONObjectID(id)
+      val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
+      for {
+        maybeExpense <- futureExpense
+        result <- maybeExpense.map { expense =>
+          import reactivemongo.api.gridfs.Implicits.DefaultReadFileReader
+          gridFS.find(BSONDocument(
+             "$query" -> BSONDocument("expenses" -> expense.id.get),
+             "$orderby" -> BSONDocument("uploadDate" -> 1))
+            ).toList().map { files =>
+            val filesWithId = files.map { file =>
+              file.id.asInstanceOf[BSONObjectID].stringify -> file
+            }
+            Ok(views.html.reviewform(username, lastname, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.items, expense.comments, Some(filesWithId)))      
+          }
+        }.getOrElse(Future(NotFound))
+      } yield result
+    }    
+  }
+
 
   // TODO: Check that the user is allow to see the expenses. Only the author and the reviewer can see the expense.
   def expensesShow(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
@@ -143,6 +166,7 @@ object Application extends Controller with MongoController with Secured {
           "status" -> nonEmptyText,
           "reference" -> optional(text),
           "author" -> nonEmptyText,
+          "email" -> nonEmptyText,
           "startDate" -> of[Long],
           "endDate" -> of[Long],
           "items" -> list[Item]  (
@@ -168,12 +192,13 @@ object Application extends Controller with MongoController with Secured {
           }
           )
         )
-        { (id, status, reference, author, startDate, endDate, items) =>
+        { (id, status, reference, author, email, startDate, endDate, items) =>
           Expense(
             id.map(new BSONObjectID(_)),
             status,
             reference,
             author,
+            email,
             new DateTime(startDate),
             new DateTime(endDate), 
             items)
@@ -184,6 +209,7 @@ object Application extends Controller with MongoController with Secured {
               expense.status,
               expense.reference,
               expense.author,
+              expense.email,
               expense.startDate.getMillis,
               expense.endDate.getMillis, 
               expense.items.toList))
@@ -317,7 +343,7 @@ object Application extends Controller with MongoController with Secured {
         "$query" -> BSONDocument("author" -> username, "frequence" -> "Every month"))
 
       val query = BSONDocument(
-        "$query" -> BSONDocument("author" -> username, "year" -> new DateTime().getYear),
+        "$query" -> BSONDocument("email" -> username, "year" -> new DateTime().getYear),
         "$orderby" -> BSONDocument("year" -> -1))
 
       for { recurring <- recurringExpenses.find(queryRecurringMonthly).cursor[RecurringExpense].toList()
@@ -335,6 +361,7 @@ object Application extends Controller with MongoController with Secured {
                 None,
                 "draft",
                 None,
+                lastname,
                 username,
                 startDate,
                 endDate,
