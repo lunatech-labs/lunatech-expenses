@@ -534,7 +534,12 @@ trait Secured {
   /**
    * Retrieve the connected user email.
    */
-  private def username(request: RequestHeader):Option[(String, String)] = Option((request.session.get("email").getOrElse(""), request.session.get("firstname").getOrElse("") + " " + request.session.get("lastname").getOrElse("")))
+  private def username(request: RequestHeader):Option[(String, String)] = {
+    request.session.get("email") match {
+      case Some(email) => Option((email, request.session.get("firstname").getOrElse("") + " " + request.session.get("lastname").getOrElse("")))
+      case _ => None
+    }
+  }
 
   
  /**
