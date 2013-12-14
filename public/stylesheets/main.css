@@ -228,3 +228,34 @@ table.edit tr.total td:hover {
 	padding-left: 6px;
 	color: rgb(236, 64, 64);
 }
+
+.dropzone {
+	margin: 30px 0;
+	padding: 4px;
+	border: 1px solid #EEE;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	height: 80px;
+}
+
+.dropzone:hover {
+	background-color: #CCC;
+}
+
+
+.dropzone .dz-default.dz-message {
+opacity: 1;
+-ms-filter: none;
+filter: none;
+-webkit-transition: opacity 0.3s ease-in-out;
+-moz-transition: opacity 0.3s ease-in-out;
+-o-transition: opacity 0.3s ease-in-out;
+-ms-transition: opacity 0.3s ease-in-out;
+transition: opacity 0.3s ease-in-out;
+position: relative;
+top: 5px;
+}
+.dropzone.dz-clickable .dz-message, .dropzone.dz-clickable .dz-message span {
+cursor: pointer;
+}
+

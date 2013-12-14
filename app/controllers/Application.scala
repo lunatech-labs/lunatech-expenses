@@ -38,6 +38,12 @@ object Application extends Controller with MongoController with Secured {
   def expenses = db.collection[BSONCollection]("expenses")
   def recurringExpenses = db.collection[BSONCollection]("recurringexpenses")
 
+  val gridFS = new GridFS(db)
+
+  gridFS.ensureIndex().onComplete {
+    case index =>
+      Logger.info(s"Checked index, result is $index")
+  }
 
 
   def index = IsAuthenticated { (username, lastname) => implicit request =>
@@ -62,11 +68,22 @@ object Application extends Controller with MongoController with Secured {
     Async {
       val objectId = new BSONObjectID(id)
       val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
-     
-      futureExpense.map { expense =>
-        Ok(views.html.expensesform(username, lastname, expense.get.startDate, expense.get.endDate, expenseForm.fill(expense.get), expense.get.items, expense.get.comments))
-      }
-    }
+      for {
+        maybeExpense <- futureExpense
+        result <- maybeExpense.map { expense =>
+          import reactivemongo.api.gridfs.Implicits.DefaultReadFileReader
+          gridFS.find(BSONDocument(
+             "$query" -> BSONDocument("expenses" -> expense.id.get),
+             "$orderby" -> BSONDocument("uploadDate" -> 1))
+            ).toList().map { files =>
+            val filesWithId = files.map { file =>
+              file.id.asInstanceOf[BSONObjectID].stringify -> file
+            }
+            Ok(views.html.expensesform(username, lastname, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.items, expense.comments, Some(filesWithId)))      
+          }
+        }.getOrElse(Future(NotFound))
+      } yield result
+    }    
   }
 
 
@@ -390,6 +407,44 @@ object Application extends Controller with MongoController with Secured {
         }
     }
   }     
+
+
+  // -- Attachments
+
+  // TODO: This should be secured
+  def saveAttachments(id: String) = Action(gridFSBodyParser(gridFS))  {  implicit request =>
+    println("files " + request.body.files + " " + id)
+    val futureFile = request.body.files.head.ref
+    val futureUpdate = for {
+      file <- futureFile
+      updateResult <- {
+        gridFS.files.update(
+          BSONDocument("_id" -> file.id),
+          BSONDocument("$set" -> BSONDocument("expenses" -> BSONObjectID(id))))
+      }
+    } yield updateResult
+
+    Async {
+      futureUpdate.map {
+        case _ => Ok
+      }.recover {
+        case e => InternalServerError(e.getMessage())
+      }
+    }
+  }
+
+  def getAttachment(id: String) = IsAuthenticated { (username, lastname)  => request =>
+    Async {
+      val file = gridFS.find(BSONDocument("_id" -> new BSONObjectID(id)))
+      serve(gridFS, file)     
+    }
+  }
+
+  def deleteAttachment(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
+    Async {
+      gridFS.remove(new BSONObjectID(id)).map(_ => Ok).recover { case _ => InternalServerError }
+    }
+  }
 
 
   // -- Authentication

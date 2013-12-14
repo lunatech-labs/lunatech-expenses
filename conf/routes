@@ -13,11 +13,14 @@ POST 	/expense/new						controllers.Application.expensesNew()
 POST 	/expense/:id/comment				controllers.Application.addComment(id: String)
 GET  	/expense/:id/:commentId/delete		controllers.Application.deleteComment(id: String, commentId: String)
 POST    /expense/:id 						controllers.Application.expensesEdit(id: String)
+POST	/attachment/:id 					controllers.Application.saveAttachments(id: String)
+GET     /attachment/:id/delete     			controllers.Application.deleteAttachment(id: String)
+GET     /attachment/:id         			controllers.Application.getAttachment(id: String)
 
-GET     /login		               	controllers.Application.login()
-GET     /authenticate               controllers.Application.authenticate()
-GET     /callback                	controllers.Application.callback()
-GET     /logout		               	controllers.Application.logout()
+GET     /login		               			controllers.Application.login()
+GET     /authenticate               		controllers.Application.authenticate()
+GET     /callback                			controllers.Application.callback()
+GET     /logout		               			controllers.Application.logout()
 
 
 GET     /recurring                          controllers.Application.recurringIndex
