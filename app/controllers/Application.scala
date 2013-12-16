@@ -329,26 +329,35 @@ object Application extends Controller with MongoController with Secured {
     }
   }
 
-  // This should be a private function that is called by specialized function
   def submitExpense(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
-     AsyncResult {
-        
-        expenses.update(BSONDocument("_id" -> objectId), modifier).map { _ =>
-          Redirect(routes.Application.expensesShow(id)).flashing("success" -> "Expense is now submitted. Please print it and provide the receipts.")
-        }
+    Async {
+      convertTo(id, "submitted", Redirect(routes.Application.expensesShow(id)).flashing("success" -> "Expense has been submitted."))
     }
   }
 
-  def convertTo(id: String, status: String, successMessage: String) = IsAuthenticated { (username, lastname)  => implicit request =>
-     AsyncResult {
+  // TODO: only admin can do that
+  def approveExpense(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
+    Async {
+     convertTo(id, "approved", Redirect(routes.Application.review(id)).flashing("success" -> "Expense has been approved."))
+    }
+  }
+
+  // TODO: only admin can do that
+  def  rejectExpense(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
+    Async {
+      convertTo(id, "rejected",  Redirect(routes.Application.review(id)).flashing("success" -> "Expense has been rejected."))
+    }
+  }
+
+  // This should be a private function that is called by specialized function
+  private def convertTo(id: String, status: String, action: Result): Future[Result] = {
         val objectId = new BSONObjectID(id)
         val modifier = BSONDocument(
           "$set" -> BSONDocument(
             "status" -> BSONString(status)))
         expenses.update(BSONDocument("_id" -> objectId), modifier).map { _ =>
-          Redirect(routes.Application.expensesShow(id)).flashing("success" -> "Expense is now submitted. Please print it and provide the receipts.")
+          action
         }
-    }
   }
 
  def expensesNewForm = IsAuthenticated { (username, lastname)  => implicit request =>

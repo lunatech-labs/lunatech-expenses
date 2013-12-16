@@ -6,7 +6,7 @@
 GET     /                           		controllers.Application.index
 GET     /expenses/:year                     controllers.Application.expensesIndex(year: Int)
 GET     /expense/new                        controllers.Application.expensesNewForm
-GET     /expense/:id/status/:status         controllers.Application.convertTo(id: String, status: String)
+GET     /expense/:id/submit         		controllers.Application.submitExpense(id: String)
 GET 	/expense/delete						controllers.Application.expensesDelete(id: String)
 GET     /expense/:id                        controllers.Application.expensesShow(id: String)
 POST 	/expense/new						controllers.Application.expensesNew()
@@ -24,6 +24,9 @@ GET     /logout		               			controllers.Application.logout()
 
 GET     /review/expenses  					controllers.Application.reviewIndex()
 GET     /review/:id   						controllers.Application.review(id: String)
+GET     /expense/:id/approve         		controllers.Application.approveExpense(id: String)
+GET     /expense/:id/reject         		controllers.Application.rejectExpense(id: String)
+
 
 GET     /recurring                          controllers.Application.recurringIndex
 GET     /recurring/new                      controllers.Application.recurringNewForm
