@@ -66,7 +66,11 @@
 	            			   </tr>
 					         }
 
-					        
+					         <tr class="total">
+					            <td colspan="3">Total:</td>
+					           	<td class="right" id="total">@items.map(_.amount).sum €</td>
+					            <td></td>
+					          </tr>
 					        </tbody>
 					      </table>
 

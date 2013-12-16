@@ -6,7 +6,10 @@ import play.modules.reactivemongo.MongoController
 import play.modules.reactivemongo.json.collection.JSONCollection
 import scala.concurrent.Future
 import play.api.libs.json._
+
 import play.api.libs.concurrent.Execution.Implicits._
+
+import utils.Time
 
 import java.net.URL
 import libs.openid.OpenID
@@ -29,6 +32,7 @@ import play.api.data.Forms._
 import play.api.data.format.Formats._
 import play.api.data.validation.Constraints._
 import org.joda.time.DateTime
+
 
 object Application extends Controller with MongoController with Secured {
 
@@ -331,7 +335,14 @@ object Application extends Controller with MongoController with Secured {
 
   def submitExpense(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
     Async {
-      convertTo(id, "submitted", Redirect(routes.Application.expensesShow(id)).flashing("success" -> "Expense has been submitted."))
+      val result = convertTo(id, "submitted", Redirect(routes.Application.expensesShow(id)).flashing("success" -> "Expense has been submitted."))
+      val objectId = new BSONObjectID(id)
+      val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
+      futureExpense.flatMap { expense =>
+        sendSubmittedEmail(expense.get)
+        result
+      }
+      
     }
   }
 
@@ -481,7 +492,64 @@ object Application extends Controller with MongoController with Secured {
     }
   }     
 
+  // -- Emails
 
+  private def sendCommentEmailToAdmins(username: String, email: String, expense: Expense, comment: Comment) = {
+    import com.typesafe.plugin._
+    import play.api.Play.current
+    val mail = use[MailerPlugin].email
+    val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
+    //mail.setSubject(username + " left you a commment about your expense from " + Time.ordinal(from) + fmt.format(from) + " until " + Time.ordinal(until) + fmt.format(until))
+    mail.setRecipient(Play.configuration.getString("email.recipient").get.split(",").toList:_*)
+    mail.setFrom(expense.author + " <" + expense.email + ">")
+    //val template = views.html.emails.vacationRequest.render(expense, Play.configuration.getString("baseUrl").get)
+
+    // sends html
+    //mail.sendHtml(template.body)
+  }
+
+  private def sendRejectedEmail(expense: Expense) = {
+    import com.typesafe.plugin._
+    import play.api.Play.current
+    val mail = use[MailerPlugin].email
+    val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
+    //mail.setSubject("You expense from " + Time.ordinal(from) + fmt.format(from) + " until " + Time.ordinal(until) + fmt.format(until) + " has been approved.")
+    mail.setFrom(Play.configuration.getString("email.from").get)
+    mail.setRecipient(expense.author + " <" + expense.email + ">")
+    //val template = views.html.emails.rejectedVacation.render(expense, Play.configuration.getString("baseUrl").get, comment)
+
+    // sends html
+    //mail.sendHtml(template.body)
+  }
+
+  private def sendSubmittedEmail(expense: Expense) = {
+    import com.typesafe.plugin._
+    import play.api.Play.current
+    val mail = use[MailerPlugin].email
+    val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
+    mail.setSubject(expense.author + " submitted an expense. Please review it.")
+    mail.setFrom(expense.author + " <" + expense.email + ">")
+    mail.setRecipient(Play.configuration.getString("email.recipient").get.split(",").toList:_*)
+    val template = views.html.emails.notifynewexpense.render(expense, Play.configuration.getString("baseUrl").get)
+
+    // sends html
+    mail.sendHtml(template.body)
+  }
+
+
+  private def sendApprovedEmail(expense: Expense) = {
+    import com.typesafe.plugin._
+    import play.api.Play.current
+    val mail = use[MailerPlugin].email
+    val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
+    //mail.setSubject("You expense from " + Time.ordinal(from) + fmt.format(from) + " until " + Time.ordinal(until) + fmt.format(until) + " has been rejected.")
+    mail.setFrom(Play.configuration.getString("email.from").get)
+    mail.setRecipient(expense.author + " <" + expense.email + ">")
+    //val template = views.html.emails.approvedVacation.render(expense, Play.configuration.getString("baseUrl").get, comment)
+
+    // sends html
+    //mail.sendHtml(template.body)
+  }
 
 
   // -- Attachments
