@@ -64,6 +64,7 @@ object Application extends Controller with MongoController with Secured {
     }
   }
 
+  // TODO: only the admins can view the expenses to review
   def reviewIndex() = IsAuthenticated { (username, lastname)  => implicit request =>
     Async {
       val query = BSONDocument(
@@ -77,6 +78,7 @@ object Application extends Controller with MongoController with Secured {
     }
   }
 
+ // TODO: only the admins can review an expense
  def review(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
     Async {
       val objectId = new BSONObjectID(id)
@@ -233,6 +235,7 @@ object Application extends Controller with MongoController with Secured {
       })
   }
  
+ // TODO: only the owner can delete the expense
  def expensesDelete(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
      Async {
         val objectId = new BSONObjectID(id)
@@ -253,6 +256,7 @@ object Application extends Controller with MongoController with Secured {
       }
        
  
+  // TODO: only the owner can edit the expense
   def expensesEdit(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
      expenseForm.bindFromRequest.fold(
       errors => AsyncResult {
@@ -306,6 +310,7 @@ object Application extends Controller with MongoController with Secured {
       })
   }
 
+  // TODO: only the owner can delete the comment
   def deleteComment(id: String, commentId: String) = IsAuthenticated { (username, lastname)  => implicit request =>
     import models.Expense.CommentBSONWriter
 
@@ -324,7 +329,17 @@ object Application extends Controller with MongoController with Secured {
     }
   }
 
-  def convertTo(id: String, status: String) = IsAuthenticated { (username, lastname)  => implicit request =>
+  // This should be a private function that is called by specialized function
+  def submitExpense(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
+     AsyncResult {
+        
+        expenses.update(BSONDocument("_id" -> objectId), modifier).map { _ =>
+          Redirect(routes.Application.expensesShow(id)).flashing("success" -> "Expense is now submitted. Please print it and provide the receipts.")
+        }
+    }
+  }
+
+  def convertTo(id: String, status: String, successMessage: String) = IsAuthenticated { (username, lastname)  => implicit request =>
      AsyncResult {
         val objectId = new BSONObjectID(id)
         val modifier = BSONDocument(
@@ -382,7 +397,8 @@ object Application extends Controller with MongoController with Secured {
     }
   }
 
-  def recurringEdit(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
+  // TODO: only the owner can edit the expense
+ def recurringEdit(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
      recurringForm.bindFromRequest.fold(
       errors => AsyncResult {
         val objectId = new BSONObjectID(id)
@@ -442,6 +458,7 @@ object Application extends Controller with MongoController with Secured {
     }
   }
 
+  // TODO: only the owner can delete the expense
   def recurringDelete(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
      Async {
         val objectId = new BSONObjectID(id)
@@ -456,9 +473,11 @@ object Application extends Controller with MongoController with Secured {
   }     
 
 
+
+
   // -- Attachments
 
-  // TODO: This should be secured
+  // TODO: This should be secured ie user have to be registered
   def saveAttachments(id: String) = Action(gridFSBodyParser(gridFS))  {  implicit request =>
     val futureFile = request.body.files.head.ref
     val futureUpdate = for {
@@ -479,6 +498,7 @@ object Application extends Controller with MongoController with Secured {
     }
   }
 
+  // TODO: only the owner or admin can save the file
   def getAttachment(id: String) = IsAuthenticated { (username, lastname)  => request =>
     Async {
       val file = gridFS.find(BSONDocument("_id" -> new BSONObjectID(id)))
@@ -486,6 +506,7 @@ object Application extends Controller with MongoController with Secured {
     }
   }
 
+  // TODO: only the owner can delete the file
   def deleteAttachment(id: String) = IsAuthenticated { (username, lastname)  => implicit request =>
     Async {
       gridFS.remove(new BSONObjectID(id)).map(_ => Ok).recover { case _ => InternalServerError }
