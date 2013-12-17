@@ -1,4 +1,4 @@
-@(expense: Expense, baseUrl: String)
+@(expense: Expense, baseUrl: String, comment: Comment)
 @import java.util.Calendar
 @import java.util.Date
 @import utils.Time
@@ -8,7 +8,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>New expense from @expense.author to review</title>
+        <title>New comment from  @expense.author </title>
         <link rel="stylesheet" media="screen" href="@baseUrl@routes.Assets.at("stylesheets/main.css")">
         <link rel="shortcut icon" type="image/png" href="@baseUrl@routes.Assets.at("images/favicon.png")">
         <link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css" rel="stylesheet">
@@ -33,36 +33,17 @@
                         <div style="margin: 50px 0 20px">
                             <h3><a href="@baseUrl@routes.Application.review(expense.id.get.stringify)">@expense.reference</a></h3>
                         </div>
-                        <table class="table edit">
-                            <thead>
-                              <tr>
-                                <th>#</th>
-                                <th>Date</th>
-                                <th>Item</th>
-                                <th class="right">Amount (BTW incl.)</th>
-                                <th>Notes</th>
-                                <th></th>
-                              </tr>
-                            </thead>
-                            <tbody id="items">
-                             @expense.items.zipWithIndex.map { case (item, index) =>
-                               <tr>
-                                <td class="number">@(index+1)</td>
-                                <td>@Time.ordinal(item.date) @item.date.toString("MMM. yyyy") </td>
-                                <td>@item.name</td>
-                                <td class="amount right">@item.amount €</td>
-                                <td>@item.note</td>
-                                <td></td>
-                               </tr
-                               >
-                             } 
-                             <tr class="total">
-                                <td colspan="3">Total:</td>
-                                <td class="right" id="total">@expense.items.map(_.amount).sum €</td>
-                                <td></td>
-                              </tr>                           
-                            </tbody>
-                        </table>
+                        
+                         <div class="comment comment-panel">
+                           <div class="last-comment commentbody">
+                              <div class="comment-heading">
+                                <img src="http://www.gravatar.com/avatar/@Time.md5(comment.email)?d=mm&amp;s=36" /> <span>@comment.author</span><small style="position:relative;  padding-left: 10px;font-weight:normal">- @Time.timeAgo(comment.date)</small></div>
+                                  <div class="comment-body">
+                                   @comment.content
+                                  </div>
+                              <div class="action" style="font-size: 11px; margin-right:20px; text-align: right"><a href="@baseUrl@routes.Application.review(expense.id.get.stringify)">Reply</a></div>
+                    
+                        </div>
 
                         <div id="corner_logo">
 

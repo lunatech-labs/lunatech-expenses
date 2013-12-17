@@ -152,11 +152,11 @@
 		$("div.modal-body").emoticonize();
 		</script>
 	    <div class="sidebar" >
-	    	 <div class="button"><a class="btn btn-primary" role="button" onclick="$('#edit').submit()">Save</a> or <a href="@routes.Application.reviewIndex()">Cancel</a> </div>
+	    	 <div class="button"><a href="@routes.Application.reviewIndex()">Return to list</a> </div>
     		<div>
               <h3><a href="">Related actions</a></h3>
               <ul class="related-actions">
-            	<li><i class="fa fa-print"></i> <a data-toggle="modal" data-target="#myModal">Print expenses form</a></li>
+            	<li><i class="fa fa-print"></i> <a href="javascript:window.print()">Print expenses form</a></li>
             	<li><i class="fa fa-check-square-o"></i> <a href="@routes.Application.approveExpense(expense("id").value.getOrElse(""))">Approve this expense</a></li>
             	<li><i class="fa fa-check-square-o"></i> <a href="@routes.Application.rejectExpense(expense("id").value.getOrElse(""))">Reject this expense</a></li>
             	

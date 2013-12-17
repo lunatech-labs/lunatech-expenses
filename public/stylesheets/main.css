@@ -154,6 +154,7 @@ h3.comment {
 	font-weight: bold;
 	font-weight: 1.5em;
 	color: #444;
+	clear: both
 }
 
 .comment-panel {
@@ -257,5 +258,10 @@ top: 5px;
 }
 .dropzone.dz-clickable .dz-message, .dropzone.dz-clickable .dz-message span {
 cursor: pointer;
+}
+
+
+#signature {
+	display: none;
 }
 

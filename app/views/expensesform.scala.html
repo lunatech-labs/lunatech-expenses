@@ -10,7 +10,7 @@
 	        <div class="col">
 	            <div class="chat-wrapper">
 
-	            <div class="pull-right"><h3>@(expense("status").value.getOrElse("") match { 
+	            <div class="pull-right status"><h3>@(expense("status").value.getOrElse("") match { 
 	            	case "draft" => <span class="label label-default">draft</span>
 	            	case "submitted" => <span class="label label-info">submitted</span>
 	            	case "approved" => <span class="label label-success">approved</span>
@@ -187,6 +187,11 @@
 					        </tbody>
 					      </table>
 
+					      <div id="signature">
+							<h4>Date: @(new DateTime().toString("dd MM yyyy"))</h4>
+							<h4 style="float:left; margin: 50px">Signature:</h4><h4 style="float:left; margin: 50px; ">Approval:</h4>
+						  </div>     		
+
 					       <script>
 		                    var date = $('#date').datepicker({format: 'dd/mm/yyyy'});
    							@if(expense("status").value.getOrElse("") == "draft") {
@@ -304,7 +309,7 @@
     		<div>
               <h3><a href="">Related actions</a></h3>
               <ul class="related-actions">
-            	<li><i class="fa fa-print"></i> <a data-toggle="modal" data-target="#myModal">Print expenses form</a></li>
+            	<li><i class="fa fa-print"></i> <a onclick="javascript:window.print()">Print expenses form</a></li>
             	@if(expense("status").value.getOrElse("") == "draft") {
             	<li><i class="fa fa-check-square-o"></i> <a href="@routes.Application.submitExpense(expense("id").value.getOrElse(""))">Submit your expense</a></li>
             	<li><i class="fa fa-trash-o"></i> <a data-toggle="modal" data-target="#deleteModal" >Delete</a></li>

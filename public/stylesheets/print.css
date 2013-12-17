@@ -1,0 +1,32 @@
+#corner_logo {
+	display: none;
+}
+
+.navbar {
+	display: none;
+}
+
+#signature {
+	display: block;
+}
+
+.comment {
+	display: none;
+}
+
+.alert, .status, .sidebar {
+	display: none;
+}
+
+#signature {
+	margin-top: 60px;
+	display: block;
+}
+
+#signature h4 {
+	color: #444;
+}
+
+#Container div.left {
+	width: 98%;
+}
