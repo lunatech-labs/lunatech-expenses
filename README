@@ -9,7 +9,9 @@ export MONGO_URI= "..."
 export GOOGLE_DOMAIN="..."
 export GOOGLE_KEY="..."
 export GOOGLE_SECRET="..."
-
+export SENDGRID_SMTP_HOST=""
+export SENDGRID_USERNAME=""
+export SENDGRID_PASSWORD=""
 ```
 
 Please check on confluence for the exact information. And then, `play run `
