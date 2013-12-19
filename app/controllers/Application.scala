@@ -681,7 +681,7 @@ object Secure {
 
   def isAdministrator(email: String) = {
     import play.api.Play.current
-    Play.configuration.getString("administrators").getOrElse("").contains(email)
+    Play.configuration.getString("email.recipient").getOrElse("").contains(email)
   }
 
 }
