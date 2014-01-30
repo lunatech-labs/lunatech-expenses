@@ -3,12 +3,17 @@ package utils
 import org.joda.time.DateTime
 import java.util._
 import org.ocpsoft.prettytime.PrettyTime
+import org.joda.time.DateTimeZone
 
 object Time {
 
+  val zone = DateTimeZone.forID("Europe/Amsterdam")
+  val tz = TimeZone.getTimeZone("Europe/Amsterdam")
+
   def ordinal(date: DateTime) = {
     val cal = Calendar.getInstance()
-    cal.setTime(date.toDate)
+    cal.setTime(date.toDateTime(zone).toDate)
+    cal.setTimeZone(tz)
     val num = cal.get(Calendar.DAY_OF_MONTH)
     val suffix = Array("th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th")
     val m = num % 100
