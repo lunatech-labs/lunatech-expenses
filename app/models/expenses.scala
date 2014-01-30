@@ -8,6 +8,7 @@ import play.api.data.format.Formats._
 import play.api.data.validation.Constraints._
 import org.joda.time.format._
 import reactivemongo.bson._
+import org.joda.time.DateTimeZone
 
 
 case class RecurringExpense (
@@ -21,6 +22,7 @@ case class RecurringExpense (
 
 object RecurringExpense {
 
+   
    implicit object RecurringExpenseBSONReader extends BSONDocumentReader[RecurringExpense] {
     def read(doc: BSONDocument) =
       RecurringExpense(
@@ -63,10 +65,14 @@ case class Item(date: DateTime, name: String, amount: Double, note: Option[Strin
 
 object Expense {
 
+  val zone = DateTimeZone.forID("Europe/Amsterdam")
+  
+
+
   implicit object ItemBSONReader extends BSONDocumentReader[Item] {
     def read(doc: BSONDocument) =
       Item(
-        doc.getAs[BSONDateTime]("date").map(dt => new DateTime(dt.value)).get,
+        doc.getAs[BSONDateTime]("date").map(dt => new DateTime(dt.value, zone)).get,
         doc.getAs[String]("name").get,
         doc.getAs[BSONDouble]("amount").get.value,
         doc.getAs[String]("note")
@@ -76,7 +82,7 @@ object Expense {
   implicit object ItemBSONWriter extends BSONDocumentWriter[Item] {
      def write(item: Item): BSONDocument =
       BSONDocument(
-        "date" -> BSONDateTime(item.date.getMillis - 1),
+        "date" -> BSONDateTime(item.date.getMillis),
         "name" -> item.name,
         "amount" -> BSONDouble(item.amount),
         "note" -> item.note)
@@ -88,7 +94,7 @@ object Expense {
         doc.getAs[String]("id"),
         doc.getAs[String]("author").get,
         doc.getAs[String]("email").get,
-        doc.getAs[BSONDateTime]("date").map(dt => new DateTime(dt.value)).get,
+        doc.getAs[BSONDateTime]("date").map(dt => new DateTime(dt.value, zone)).get,
         doc.getAs[String]("content").get
       )
   }
@@ -99,7 +105,7 @@ object Expense {
         "id" -> comment.id.getOrElse(BSONObjectID.generate.stringify),
         "author" -> comment.author,
         "email" -> comment.email,
-        "date" -> BSONDateTime(comment.date.getMillis - 1),
+        "date" -> BSONDateTime(comment.date.getMillis),
         "content" -> comment.content)
   }
 
@@ -111,8 +117,8 @@ object Expense {
         doc.getAs[String]("reference"),
         doc.getAs[String]("author").get,
         doc.getAs[String]("email").get,
-        doc.getAs[BSONDateTime]("start_date").map(dt => new DateTime(dt.value)).get,
-        doc.getAs[BSONDateTime]("end_date").map(dt => new DateTime(dt.value)).get,
+        doc.getAs[BSONDateTime]("start_date").map(dt => new DateTime(dt.value, zone)).get,
+        doc.getAs[BSONDateTime]("end_date").map(dt => new DateTime(dt.value, zone)).get,
         doc.getAs[Seq[Item]]("items").get,
         doc.getAs[Seq[Comment]]("comments").get
       )
@@ -125,8 +131,8 @@ object Expense {
         "reference" -> expense.reference,
         "author" -> expense.author,
         "email" -> expense.email,       
-        "start_date" -> BSONDateTime(expense.startDate.getMillis - 1),
-        "end_date" -> BSONDateTime(expense.endDate.getMillis - 1),
+        "start_date" -> BSONDateTime(expense.startDate.getMillis),
+        "end_date" -> BSONDateTime(expense.endDate.getMillis),
         "items" -> expense.items,
         "comments" -> expense.comments,
         "year" -> expense.startDate.getYear // TODO: get the year from the start date
