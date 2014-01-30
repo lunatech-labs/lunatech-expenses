@@ -30,3 +30,7 @@
 #Container div.left {
 	width: 98%;
 }
+
+span.print {
+	display: inline;
+}

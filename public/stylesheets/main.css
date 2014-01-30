@@ -265,3 +265,6 @@ cursor: pointer;
 	display: none;
 }
 
+span.print {
+	display: none;
+}
