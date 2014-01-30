@@ -65,8 +65,8 @@ case class Item(date: DateTime, name: String, amount: Double, note: Option[Strin
 
 object Expense {
 
-  val zone = DateTimeZone.forID("Europe/Amsterdam")
-  
+  val zone = DateTimeZone.UTC
+
 
 
   implicit object ItemBSONReader extends BSONDocumentReader[Item] {
