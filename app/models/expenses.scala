@@ -67,8 +67,6 @@ object Expense {
 
   val zone = DateTimeZone.UTC
 
-
-
   implicit object ItemBSONReader extends BSONDocumentReader[Item] {
     def read(doc: BSONDocument) =
       Item(
@@ -131,8 +129,8 @@ object Expense {
         "reference" -> expense.reference,
         "author" -> expense.author,
         "email" -> expense.email,       
-        "start_date" -> BSONDateTime(expense.startDate.getMillis),
-        "end_date" -> BSONDateTime(expense.endDate.getMillis),
+        "start_date" -> BSONDateTime(expense.startDate.toDateTime(zone).getMillis),
+        "end_date" -> BSONDateTime(expense.endDate.toDateTime(zone).getMillis),
         "items" -> expense.items,
         "comments" -> expense.comments,
         "year" -> expense.startDate.getYear // TODO: get the year from the start date
