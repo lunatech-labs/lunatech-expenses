@@ -182,7 +182,7 @@ object Application extends Controller with MongoController with Secured {
               "amount" -> of[Double],
               "note" -> optional(text)) { (date, name, amount, note) =>
               Item(
-                 new DateTime(date),
+                 new DateTime(date+1),
                 name,
                 amount,
                 note
@@ -206,7 +206,7 @@ object Application extends Controller with MongoController with Secured {
             author,
             email,
             new DateTime(startDate),
-            new DateTime(endDate), 
+            new DateTime(endDate+1), 
             items)
 
         } { expense => {
@@ -551,7 +551,7 @@ object Application extends Controller with MongoController with Secured {
     mail.setSubject("You expenses expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") have been rejected.")
     mail.setFrom(Play.configuration.getString("email.from").get)
     mail.setRecipient(expense.author + " <" + expense.email + ">")
-    val template = views.html.emails.notifyapprovedexpense.render(expense, Play.configuration.getString("baseUrl").get)
+    val template = views.html.emails.notifyrefusedexpenseed.render(expense, Play.configuration.getString("baseUrl").get)
 
     // sends html
     mail.sendHtml(template.body)
@@ -580,7 +580,7 @@ object Application extends Controller with MongoController with Secured {
     mail.setSubject("You expenses expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") have been approved.")
     mail.setFrom(Play.configuration.getString("email.from").get)
     mail.setRecipient(expense.author + " <" + expense.email + ">")
-    val template = views.html.emails.notifyrefusedexpense.render(expense, Play.configuration.getString("baseUrl").get)
+    val template = views.html.emails.notifyapprovedexpense.render(expense, Play.configuration.getString("baseUrl").get)
 
     // sends html
     mail.sendHtml(template.body)
