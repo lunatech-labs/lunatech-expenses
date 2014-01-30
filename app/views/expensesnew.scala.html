@@ -63,7 +63,7 @@
 					            <td class="number">@(index+1)</td>
 					            <td>@Time.ordinal(item.date) @item.date.toString("MMM. yyyy") </td>
 					            <td>@item.name</td>
-					            <td class="amount right">@item.amount €</td>
+					            <td class="amount right">€ @item.amount</td>
 					            <td>@item.note</td>
 					            <td>@if(expense("status").value.getOrElse("") == "draft") {
 					          <a class="delete" onclick="$(this).parent().parent().hide('slow', function() {$(this).remove(); updateTotal();reorder();}); "><i class="fa fa-trash-o"></i> Delete</a>}
@@ -86,7 +86,7 @@
 					         		var number = $('#items').children().size() - 2
 					         		console.log("number " + number)
 					         		// Add a new row to the table
-					         		$('#addItem').before('<tr><td class="number">' + number + '</td><td>' + moment(date, "DD/MM/YYYY").format("Do MMM. YYYY") + '</td><td>' + description + '</td><td class="amount right">' + amount + ' €</td><td>' + comment + '</td> <td><a class="delete" onclick="$(this).parent().parent().hide(\'slow\', function() {$(this).remove();updateTotal();reorder();});"><i class="fa fa-trash-o"></i> Delete</a><input name="items[' + number + '].name" type="hidden" value="' + description + '"><input name="items[' + number + '].amount" type="hidden" value="'+ amount + '"><textarea name="items[' + number + '].note" style="display:none" >' + comment + '</textarea><input name="items[' + number + '].date" type="hidden" value="' + moment(date, "DD/MM/YYYY") + '"></td>')
+					         		$('#addItem').before('<tr><td class="number">' + number + '</td><td>' + moment(date, "DD/MM/YYYY").format("Do MMM. YYYY") + '</td><td>' + description + '</td><td class="amount right">€ ' + amount + '</td><td>' + comment + '</td> <td><a class="delete" onclick="$(this).parent().parent().hide(\'slow\', function() {$(this).remove();updateTotal();reorder();});"><i class="fa fa-trash-o"></i> Delete</a><input name="items[' + number + '].name" type="hidden" value="' + description + '"><input name="items[' + number + '].amount" type="hidden" value="'+ amount + '"><textarea name="items[' + number + '].note" style="display:none" >' + comment + '</textarea><input name="items[' + number + '].date" type="hidden" value="' + moment(date, "DD/MM/YYYY") + '"></td>')
 					         		$('#date').val('')
 					         		$('#description').val('')
 					         		$('#amount').val('')
@@ -110,7 +110,7 @@
 					         			totalAmount += parseFloat($(this).text())
 					         		})
 					         		console.log("total " + totalAmount)
-					         		$("#total").text(totalAmount + " €")
+					         		$("#total").text("€ " + totalAmount)
 					         	}
 					         </script>
 					         @if(expense("status").value.getOrElse("") == "draft") {
