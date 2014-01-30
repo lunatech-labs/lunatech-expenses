@@ -76,7 +76,7 @@ object Expense {
   implicit object ItemBSONWriter extends BSONDocumentWriter[Item] {
      def write(item: Item): BSONDocument =
       BSONDocument(
-        "date" -> BSONDateTime(item.date.getMillis),
+        "date" -> BSONDateTime(item.date.getMillis + 1),
         "name" -> item.name,
         "amount" -> BSONDouble(item.amount),
         "note" -> item.note)
@@ -99,7 +99,7 @@ object Expense {
         "id" -> comment.id.getOrElse(BSONObjectID.generate.stringify),
         "author" -> comment.author,
         "email" -> comment.email,
-        "date" -> BSONDateTime(comment.date.getMillis),
+        "date" -> BSONDateTime(comment.date.getMillis + 1),
         "content" -> comment.content)
   }
 
@@ -125,8 +125,8 @@ object Expense {
         "reference" -> expense.reference,
         "author" -> expense.author,
         "email" -> expense.email,       
-        "start_date" -> BSONDateTime(expense.startDate.getMillis),
-        "end_date" -> BSONDateTime(expense.endDate.getMillis),
+        "start_date" -> BSONDateTime(expense.startDate.getMillis + 1),
+        "end_date" -> BSONDateTime(expense.endDate.getMillis + 1),
         "items" -> expense.items,
         "comments" -> expense.comments,
         "year" -> expense.startDate.getYear // TODO: get the year from the start date

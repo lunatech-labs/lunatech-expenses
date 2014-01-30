@@ -182,7 +182,7 @@ object Application extends Controller with MongoController with Secured {
               "amount" -> of[Double],
               "note" -> optional(text)) { (date, name, amount, note) =>
               Item(
-                 new DateTime(date+1),
+                 new DateTime(date),
                 name,
                 amount,
                 note
@@ -206,7 +206,7 @@ object Application extends Controller with MongoController with Secured {
             author,
             email,
             new DateTime(startDate),
-            new DateTime(endDate+1), 
+            new DateTime(endDate), 
             items)
 
         } { expense => {
