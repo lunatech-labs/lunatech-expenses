@@ -1,4 +1,4 @@
-@(username: String, lastname: String, startDate: org.joda.time.DateTime, endDate: org.joda.time.DateTime, expense: Form[Expense], items: Seq[Item], comments: Seq[Comment],files: Option[List[(String, reactivemongo.api.gridfs.ReadFile[reactivemongo.bson.BSONValue])]] = None)(implicit flash: play.api.mvc.Flash)
+@(username: String, name: String, startDate: org.joda.time.DateTime, endDate: org.joda.time.DateTime, expense: Form[Expense], items: Seq[Item], comments: Seq[Comment],files: Option[List[(String, reactivemongo.api.gridfs.ReadFile[reactivemongo.bson.BSONValue])]] = None)(implicit flash: play.api.mvc.Flash)
 @import utils._
 @import org.joda.time.DateTime
 @main("") {
@@ -99,7 +99,7 @@
 						 <form id="reply" style="display:none" action="@routes.Application.addComment(expense("id").value.getOrElse(""))" method="POST">
 				     		<div class="form-group">
 						    	<div class="">
-						    		<input type="hidden" name="author" value="@lastname"/>
+						    		<input type="hidden" name="author" value="@name"/>
 						    		<input type="hidden" name="email" value="@username"/>
 						     		
 						     		<img src="http://www.gravatar.com/avatar/@utils.Time.md5(username)?d=mm&s=36" /><textarea name="content" class="comment" rows="4" placeholder="Write a comment"></textarea>
