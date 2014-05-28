@@ -532,8 +532,7 @@ object Application extends Controller with MongoController with Secured {
     import com.typesafe.plugin._
     import play.api.Play.current
     val mail = use[MailerPlugin].email
-    val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
-    mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + fmt.format(expense.startDate) + " - " + Time.ordinal(expense.endDate) + fmt.format(expense.endDate) + ")")
+    mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ")")
     mail.setRecipient(expense.author + " <" + expense.email + ">")
     mail.setRecipient(username + "<" + email + ">")
     val template = views.html.emails.notifycommenttouser.render(username, expense, Play.configuration.getString("baseUrl").get, comment)
