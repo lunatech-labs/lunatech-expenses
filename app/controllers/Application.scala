@@ -535,6 +535,7 @@ object Application extends Controller with MongoController with Secured {
     mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ")")
     mail.setRecipient(expense.author + " <" + expense.email + ">")
     mail.setRecipient(username + "<" + email + ">")
+    mail.setFrom(Play.configuration.getString("email.from").get)
     val template = views.html.emails.notifycommenttouser.render(username, expense, Play.configuration.getString("baseUrl").get, comment)
 
     // sends html
