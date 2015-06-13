@@ -8,17 +8,28 @@ import scala.concurrent.Future
 import play.api.libs.json._
 
 import play.api.libs.concurrent.Execution.Implicits._
+import play.api.Play.current
 
 import utils.Time
 
 import java.net.URL
-import libs.openid.OpenID
+import java.math.BigInteger
+import java.security.SecureRandom
+
+import com.google.api.client.auth.oauth2.TokenResponseException
+import com.google.api.client.googleapis.auth.oauth2.{GoogleCredential, GoogleAuthorizationCodeTokenRequest, GoogleTokenResponse}
+import com.google.api.client.http.javanet.NetHttpTransport
+import com.google.api.client.json.jackson2.JacksonFactory
+import com.google.api.services.oauth2.Oauth2
+import com.google.api.services.oauth2.model.Tokeninfo
 import com.google.gdata.client.appsforyourdomain.UserService
 import com.google.gdata.client.authn.oauth.GoogleOAuthParameters
 import com.google.gdata.client.authn.oauth.OAuthHmacSha1Signer
 import com.google.gdata.client.authn.oauth.OAuthParameters.OAuthType
 import com.google.gdata.data.appsforyourdomain.provisioning.UserEntry
 import com.google.gdata.data.appsforyourdomain.provisioning.UserFeed
+
+import com.lunatech.openconnect.Authenticate
 
 import reactivemongo.api.gridfs.GridFS
 import reactivemongo.api.gridfs.Implicits.DefaultReadFileReader
@@ -36,8 +47,9 @@ import org.joda.time.DateTime
 
 object Application extends Controller with MongoController with Secured {
 
-  val GOOGLE_OP = "https://www.google.com/accounts/o8/id"
- 
+  val GOOGLE_URL = "https://accounts.google.com/o/oauth2/auth"
+
+
 
   def expenses = db.collection[BSONCollection]("expenses")
   def recurringExpenses = db.collection[BSONCollection]("recurringexpenses")
@@ -60,7 +72,7 @@ object Application extends Controller with MongoController with Secured {
       val query = BSONDocument(
         "$query" -> BSONDocument("email" -> username, "year" -> year),
         "$orderby" -> BSONDocument("year" -> -1))
-     
+
       val found = expenses.find(query).cursor[Expense]
       found.toList().map { expenses =>
         Ok(views.html.expensesindex(username, expenses, year))
@@ -74,7 +86,7 @@ object Application extends Controller with MongoController with Secured {
       val query = BSONDocument(
         "$query" -> BSONDocument("status" -> "submitted"),
         "$orderby" -> BSONDocument("start_date" -> -1))
-     
+
       val found = expenses.find(query).cursor[Expense]
       found.toList().map { expenses =>
         Ok(views.html.reviewindex(username, expenses))
@@ -98,11 +110,11 @@ object Application extends Controller with MongoController with Secured {
             val filesWithId = files.map { file =>
               file.id.asInstanceOf[BSONObjectID].stringify -> file
             }
-            Ok(views.html.reviewform(username, name, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.items, expense.comments, Some(filesWithId)))      
+            Ok(views.html.reviewform(username, name, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.items, expense.comments, Some(filesWithId)))
           }
         }.getOrElse(Future(NotFound))
       } yield result
-    }    
+    }
   }
 
 
@@ -122,11 +134,11 @@ object Application extends Controller with MongoController with Secured {
             val filesWithId = files.map { file =>
               file.id.asInstanceOf[BSONObjectID].stringify -> file
             }
-            Ok(views.html.expensesform(username, name, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.items, expense.comments, Some(filesWithId)))      
+            Ok(views.html.expensesform(username, name, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.items, expense.comments, Some(filesWithId)))
           }
         }.getOrElse(Future(NotFound))
       } yield result
-    }    
+    }
   }
 
 
@@ -141,7 +153,7 @@ object Application extends Controller with MongoController with Secured {
        "frequence" -> nonEmptyText,
        "author" -> nonEmptyText
     ) {
-      (id, description, amount, frequency, author) => 
+      (id, description, amount, frequency, author) =>
         RecurringExpense(id.map(new BSONObjectID(_)), description, amount, frequency, author)
     } {
       expense => Some(expense.id.map(_.stringify), expense.description, expense.amount, expense.frequence, expense.author)
@@ -156,7 +168,7 @@ object Application extends Controller with MongoController with Secured {
         "email" -> email,
         "content" -> nonEmptyText
     ) {
-      (id, author, email, content) => 
+      (id, author, email, content) =>
         Comment(id, author, email, new DateTime(), content)
     } {
       comment => Some(comment.id, comment.author, comment.email, comment.content)
@@ -206,7 +218,7 @@ object Application extends Controller with MongoController with Secured {
             author,
             email,
             new DateTime(startDate),
-            new DateTime(endDate), 
+            new DateTime(endDate),
             items)
 
         } { expense => {
@@ -217,7 +229,7 @@ object Application extends Controller with MongoController with Secured {
               expense.author,
               expense.email,
               expense.startDate.getMillis,
-              expense.endDate.getMillis, 
+              expense.endDate.getMillis,
               expense.items.toList))
         }
       }
@@ -232,19 +244,19 @@ object Application extends Controller with MongoController with Secured {
       expense => Async {
         import models.Expense.ItemBSONWriter
         val doc = BSON.write(expense)
-        val id = doc.getAs[BSONObjectID]("_id") 
+        val id = doc.getAs[BSONObjectID]("_id")
         expenses.insert(doc).map{ lastError =>
           Redirect(routes.Application.expensesShow(id.get.stringify)).flashing("success" -> "Your expense has been created")
         }
       })
   }
- 
+
  // TODO: only the owner can delete the expense
  def expensesDelete(id: String) = IsAuthenticated { (username, name)  => implicit request =>
      Async {
         val objectId = new BSONObjectID(id)
         val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
-        
+
         futureExpense.flatMap { expense =>
 
           gridFS.find(BSONDocument("expenses" -> new BSONObjectID(id))).toList().flatMap { files =>
@@ -255,11 +267,11 @@ object Application extends Controller with MongoController with Secured {
             }.flatMap { _ =>
               expenses.remove(BSONDocument("_id" -> new BSONObjectID(id)))
             }.map(_ => Redirect(routes.Application.expensesIndex(expense.get.startDate.getYear)).flashing("success" -> "Expense has been deleted")).recover { case _ => InternalServerError }
-          }          
+          }
         }
       }
-       
- 
+
+
   // TODO: only the owner can edit the expense
   def expensesEdit(id: String) = IsAuthenticated { (username, name)  => implicit request =>
      expenseForm.bindFromRequest.fold(
@@ -301,7 +313,7 @@ object Application extends Controller with MongoController with Secured {
       comment => Async {
         val objectId = new BSONObjectID(id)
         val futureExpense = expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
-        
+
         futureExpense.flatMap { expense =>
           val comments = expense.get.comments :+ comment
           val modifier = BSONDocument(
@@ -311,9 +323,9 @@ object Application extends Controller with MongoController with Secured {
             // Send a comment to the right user
             if (comment.author == expense.get.author) {
               // Send to admin
-              sendCommentEmailToAdmins(comment.author, comment.email, expense.get, comment) 
+              sendCommentEmailToAdmins(comment.author, comment.email, expense.get, comment)
             } else {
-              sendCommentEmailToUser(comment.author, comment.email, expense.get, comment) 
+              sendCommentEmailToUser(comment.author, comment.email, expense.get, comment)
             }
 
             Redirect(routes.Application.expensesShow(id)).flashing("success" -> "Your comment has been added.")
@@ -350,7 +362,7 @@ object Application extends Controller with MongoController with Secured {
         sendSubmittedEmail(expense.get)
         result
       }
-      
+
     }
   }
 
@@ -420,9 +432,9 @@ object Application extends Controller with MongoController with Secured {
                 username,
                 startDate,
                 endDate,
-                monthlyItems) 
-         Ok(views.html.expensesnew(username, name, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.items, expense.comments))        
-      }    
+                monthlyItems)
+         Ok(views.html.expensesnew(username, name, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.items, expense.comments))
+      }
    }
   }
 
@@ -430,7 +442,7 @@ object Application extends Controller with MongoController with Secured {
     Async {
       val objectId = new BSONObjectID(id)
       val futureExpense = recurringExpenses.find(BSONDocument("_id" -> objectId)).one[RecurringExpense]
-     
+
       futureExpense.map { expense =>
           Ok(views.html.recurringform(username, name, recurringForm.fill(expense.get)))
       }
@@ -468,8 +480,8 @@ object Application extends Controller with MongoController with Secured {
      Ok(views.html.recurringnew(username, name, recurringForm))
   }
 
-  def recurringNew = IsAuthenticated { (username, name)  => implicit request => 
-   
+  def recurringNew = IsAuthenticated { (username, name)  => implicit request =>
+
      recurringForm.bindFromRequest.fold(
       errors => {
         BadRequest(views.html.recurringnew(username, name, errors))
@@ -477,20 +489,20 @@ object Application extends Controller with MongoController with Secured {
       expense => Async {
         import models.Expense.ItemBSONWriter
         val doc = BSON.write(expense)
-        val id = doc.getAs[BSONObjectID]("_id") 
+        val id = doc.getAs[BSONObjectID]("_id")
         recurringExpenses.insert(doc).map { lastError =>
           Redirect(routes.Application.recurringShow(id.get.stringify)).flashing("success" -> "Your recurring expense has been created")
         }
       })
   }
 
-  def recurringIndex = IsAuthenticated { (username, name)  => implicit request => 
+  def recurringIndex = IsAuthenticated { (username, name)  => implicit request =>
      Async {
       // TODO: Sort per date and filter per year
       val query = BSONDocument(
         "$query" -> BSONDocument("author" -> username),
         "$orderby" -> BSONDocument("desciption" -> -1))
-     
+
       val found = recurringExpenses.find(query).cursor[RecurringExpense]
       found.toList().map { expenses =>
         Ok(views.html.recurringindex(username, expenses))
@@ -503,14 +515,14 @@ object Application extends Controller with MongoController with Secured {
      Async {
         val objectId = new BSONObjectID(id)
         val futureExpense = recurringExpenses.find(BSONDocument("_id" -> objectId)).one[RecurringExpense]
-        
+
         futureExpense.flatMap { expense =>
           recurringExpenses.remove(BSONDocument("_id" -> objectId)).map { lastError =>
             Redirect(routes.Application.recurringIndex()).flashing("success" -> "Recurring expense has been deleted")
           }
         }
     }
-  }     
+  }
 
   // -- Emails
 
@@ -613,7 +625,7 @@ object Application extends Controller with MongoController with Secured {
   def getAttachment(id: String) = IsAuthenticated { (username, name)  => request =>
     Async {
       val file = gridFS.find(BSONDocument("_id" -> new BSONObjectID(id)))
-      serve(gridFS, file)     
+      serve(gridFS, file)
     }
   }
 
@@ -630,40 +642,33 @@ object Application extends Controller with MongoController with Secured {
   /**
    * Login page.
    */
-  def login = Action { implicit request =>
-    Ok(views.html.login())
-  }
 
-  /**
-   * Handle login form submission.
-   */
-  def authenticate = Action { implicit request =>
-  // We are using our open id
+     /**
+      * Login page.
+      */
+     def login = Action { implicit request =>
+       if(Play.isProd) {
+         val clientId: String = Play.configuration.getString("google.clientId").get
+         val state: String = new BigInteger(130, new SecureRandom()).toString(32)
 
-    AsyncResult(OpenID.redirectURL(GOOGLE_OP, routes.Application.callback.absoluteURL(), Seq("email" -> "http://schema.openid.net/contact/email", "firstname" -> "http://schema.openid.net/namePerson/first", "lastname" -> "http://schema.openid.net/namePerson/last")).map(url => Redirect(url))
-      .recover { case e:Throwable => Redirect(routes.Application.login) })
-  }
+         Ok(views.html.login(clientId)).withSession("state" -> state)
+       } else {
+         Redirect(routes.Application.index).withSession("email" -> "developer@lunatech.com")
+       }
+     }
 
-  def callback() = Action { implicit request =>
+     def authenticate(code: String, id_token: String, access_token: String) = Action { implicit request =>
 
-    AsyncResult(
-      OpenID.verifiedId map ( info => {
-        val originalUrl = request.session.get("originalUrl")
-        session.data.empty
-        val email = info.attributes("email")
-        val firstname = info.attributes("firstname")
-        val lastname = info.attributes("lastname")
+     Async {
+       val response = Authenticate.authenticateToken(code, id_token, access_token)
 
-        if (!isOnWhiteList(email))
-          throw UnexpectedException(Option("Not allowed"))
-        
-        originalUrl match {
-          case Some(url) => Redirect(url).withSession("email" -> email, "firstname" -> firstname, "lastname" -> lastname)
-          case _ => Redirect(routes.Application.index).withSession("email" -> email, "firstname" -> firstname, "lastname" -> lastname)
-        }        
-      })
-        recover { case e:Throwable => Logger.error("error " + e.getMessage); Redirect(routes.Application.login) })
-  }
+       response.map {
+           case Left(parameters) => Redirect(routes.Application.index).withSession(parameters.toArray: _*)
+           case Right(message) => Redirect(routes.Application.login).withNewSession.flashing("error" -> message.toString())
+         }
+       }
+   }
+
 
  /**
    * Logout and clean the session.
@@ -693,39 +698,36 @@ trait Secured {
   /**
    * Retrieve the connected user email.
    */
-  private def username(request: RequestHeader):Option[(String, String)] = {
-    request.session.get("email") match {
-      case Some(email) => Option((email, request.session.get("firstname").getOrElse("") + " " + request.session.get("lastname").getOrElse("")))
-      case _ => None
-    }
-  }
-
-  
- /**
+   private def username(request: RequestHeader):Option[(String, String)] = {
+          request.session.get("email") match {
+          case Some(email) => Option((email, request.session.get("firstname").getOrElse("") + " " + request.session.get("lastname").getOrElse("")))
+            case _ => None
+         }
+      }
+  /**
    * Redirect to login if the user in not authorized.
    */
-  private def onUnauthorized(request: RequestHeader) = { 
+  private def onUnauthorized(request: RequestHeader) = {
     Results.Redirect(routes.Application.login).withSession("originalUrl" -> request.uri)
   }
-
 
   // --
 
   /**
-   * Action for authenticated users.
-   */
-  def IsAuthenticated(f: => (String, String) => Request[AnyContent] => Result) = Security.Authenticated(username, onUnauthorized) { case (username, name) =>
-    Action(request => f(username, name)(request))
-  }
+ * Action for authenticated users.
+ */
+ def IsAuthenticated(f: => (String, String) => Request[AnyContent] => Result) =
+   Security.Authenticated(username, onUnauthorized) { case (username, name) =>
+     Action(request => f(username, name)(request))
+ }
+
+
 
   def isOnWhiteList(email:String) = {
     import play.api.Play.current
     val CONSUMER_KEY = Play.configuration.getString("google.key")
     val CONSUMER_SECRET =  Play.configuration.getString("google.secret")
     val DOMAIN =  Play.configuration.getString("google.domain")
-
-    // Comma separated google email outside the lunatech organisation
-    val WHITELIST = Play.configuration.getString("whitelist").getOrElse("")
 
     val oauthParameters = new GoogleOAuthParameters()
     oauthParameters.setOAuthConsumerKey(CONSUMER_KEY.get)
@@ -743,7 +745,7 @@ trait Secured {
     val users =  resultFeed.getEntries.toSet
     val filteredUsers = users.map( entry => entry.getTitle().getPlainText() + "@" + DOMAIN.get)
 
-    filteredUsers.contains(email) || WHITELIST.contains(email)
+    filteredUsers.contains(email)
   }
 
 }

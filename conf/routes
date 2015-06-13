@@ -17,10 +17,9 @@ POST	/attachment/:id 					controllers.Application.saveAttachments(id: String)
 GET     /attachment/:id/delete     			controllers.Application.deleteAttachment(id: String)
 GET     /attachment/:id         			controllers.Application.getAttachment(id: String)
 
-GET     /login		               			controllers.Application.login()
-GET     /authenticate               		controllers.Application.authenticate()
-GET     /callback                			controllers.Application.callback()
-GET     /logout		               			controllers.Application.logout()
+GET         /login                                                                 controllers.Application.login()
+GET         /authenticate                                                          controllers.Application.authenticate(code: String, id_token: String, access_token: String)
+GET     /logout		               	controllers.Application.logout()
 
 GET     /review/expenses  					controllers.Application.reviewIndex()
 GET     /review/:id   						controllers.Application.review(id: String)
