@@ -161,6 +161,8 @@
 					         		$(".amount").each(function() {
 					         			console.log("add " + $(this).text());
 					         			totalAmount += parseFloat($(this).text());
+					         			console.log("add " + parseFloat($(this).text()));
+					         			
 					         		})
 					         		console.log("total " + totalAmount);
 					         		$("#total").text("€ " + totalAmount.toFixed(2));

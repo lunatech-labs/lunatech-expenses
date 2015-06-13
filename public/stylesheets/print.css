@@ -39,6 +39,10 @@ span.print {
 	display: none;
 }
 
-td.action,th.action {
+td.action, th.action {
+	display: none;
+}
+
+.edit {
 	display: none;
 }
