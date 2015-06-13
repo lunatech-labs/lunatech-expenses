@@ -18,7 +18,7 @@
 	            	case _ => <span class="label label-warning">?</span>
 	            })</h3></div>
 		           
-	            	<h3 style="font-variant: small-caps">Expenses <span class="print">(@name<)</span></h3>
+	            	<h3 style="font-variant: small-caps">Expenses <span class="print">(@name)</span></h3>
 	            	@flash.get("success").map { message =>
                         <div class="alert alert-info">
                              @message
@@ -56,7 +56,7 @@
 					            <th>Item</th>
 					            <th class="right">Amount (BTW incl.)</th>
 					            <th>Notes</th>
-					            <th></th>
+					            <th class"action"></th>
 					          </tr>
 					        </thead>
 					        <tbody id="items">
@@ -67,7 +67,7 @@
 					            <td>@item.name</td>
 					            <td class="amount right">€ @item.amount</td>
 					            <td>@item.note</td>
-					            <td>@if(expense("status").value.getOrElse("") == "draft") {
+					            <td class"action">@if(expense("status").value.getOrElse("") == "draft") {
 					          <a class="delete" onclick="$(this).parent().parent().hide('slow', function() {$(this).remove(); updateTotal();reorder();}); "><i class="fa fa-trash-o"></i> Delete</a>}
 					           	@** Input fields that we are sending to the controllers that represents our list of items **@
 					        	<textarea name="items[@index].note" style="display:none">@item.note</textarea>
@@ -157,11 +157,13 @@
 
 					         	function updateTotal() {
 					         		// Update the total
-					         		var totalAmount = 0;
+					         		var totalAmount = 0.0;
 					         		$(".amount").each(function() {
-					         			totalAmount += parseFloat($(this).text())
+					         			console.log("add " + $(this).text());
+					         			totalAmount += parseFloat($(this).text());
 					         		})
-					         		$("#total").text("€ " + totalAmount)
+					         		console.log("total " + totalAmount);
+					         		$("#total").text("€ " + totalAmount.toFixed(2));
 					         	}
 
 					         	
