@@ -700,7 +700,7 @@ trait Secured {
    */
    private def username(request: RequestHeader):Option[(String, String)] = {
           request.session.get("email") match {
-          case Some(email) => Option((email, request.session.get("firstname").getOrElse("") + " " + request.session.get("lastname").getOrElse("")))
+          case Some(email) => Option((email, email/*request.session.get("firstname").getOrElse("") + " " + request.session.get("lastname").getOrElse("")*/))
             case _ => None
          }
       }
@@ -744,7 +744,7 @@ trait Secured {
     import scala.collection.JavaConversions._
     val users =  resultFeed.getEntries.toSet
     val filteredUsers = users.map( entry => entry.getTitle().getPlainText() + "@" + DOMAIN.get)
-
+    Logger.info(filteredUsers.mkString)
     filteredUsers.contains(email)
   }
 
