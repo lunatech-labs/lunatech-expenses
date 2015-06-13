@@ -4,6 +4,8 @@ version := "1.0-SNAPSHOT"
 
 resolvers += "Sonatype Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
 
+resolvers += "Lunatech Artifactory" at "http://artifactory.lunatech.com/artifactory/releases-public"
+
 libraryDependencies ++= Seq(
   jdbc,
   anorm,
