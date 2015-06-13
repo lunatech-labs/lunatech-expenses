@@ -159,12 +159,8 @@
 					         		// Update the total
 					         		var totalAmount = 0.0;
 					         		$(".amount").each(function() {
-					         			console.log("add " + $(this).text());
-					         			totalAmount += parseFloat($(this).text());
-					         			console.log("add " + parseFloat($(this).text()));
-					         			
+					         			totalAmount += parseFloat($(this).text().replace("€","").trim());
 					         		})
-					         		console.log("total " + totalAmount);
 					         		$("#total").text("€ " + totalAmount.toFixed(2));
 					         	}
 
