@@ -4,7 +4,7 @@
 
 # Home page
 GET     /                           		controllers.Application.index
-GET     /expenses/:year                     controllers.Application.expensesIndex(year: Int)
+GET     /expenses/:year                     controllers.Application.expensesIndexPerYear(year: Int)
 GET     /expense/new                        controllers.Application.expensesNewForm
 GET     /expense/:id/submit         		controllers.Application.submitExpense(id: String)
 GET 	/expense/delete						controllers.Application.expensesDelete(id: String)
@@ -21,8 +21,10 @@ GET         /login                                                              
 GET         /authenticate                                                          controllers.Application.authenticate(code: String, id_token: String, access_token: String)
 GET     /logout		               	controllers.Application.logout()
 
-GET     /review/expenses  					controllers.Application.reviewIndex()
-GET     /review/:id   						controllers.Application.review(id: String)
+
+GET     /admin/expenses/  					controllers.Application.adminIndex()
+GET     /admin/expenses/:year  					controllers.Application.adminIndexPerYear(year: Int)
+GET     /admin/:id   						controllers.Application.review(id: String)
 GET     /expense/:id/approve         		controllers.Application.approveExpense(id: String)
 GET     /expense/:id/reject         		controllers.Application.rejectExpense(id: String)
 

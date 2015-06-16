@@ -1,16 +1,16 @@
-@(username: String, expenses: Seq[Expense])(implicit flash: play.api.mvc.Flash)
+@(username: String, expenses: Seq[Expense], year: Int)(implicit flash: play.api.mvc.Flash)
 
 @import utils._
 @main("") {
 @menu(username, "review")
 
-  
+
  <div id="Wrapper">
     <div id="Container">
 	    <div class="left">
 	        <div class="col">
 	            <div class="chat-wrapper">
-	            	<h3>Expenses to review</h3>
+	            	<h3>All expenses overview</h3>
 	            	 @flash.get("success").map { message =>
                         <div class="alert alert-info">
                              @message
@@ -22,6 +22,13 @@
                              @message
                         </div>
                     }
+                    <div>
+    	            		<ul class="pagination">
+    						  <li><a href="@routes.Application.adminIndexPerYear(year-1)"><i class="fa fa-chevron-left"></i></a></li>
+    						  <li><a href="">@year</a></li>
+    						  <li><a href="@routes.Application.adminIndexPerYear(year+1)"><i class="fa fa-chevron-right"></i></a></li>
+    						</ul>
+    	            	</div>
 	            	  <table class="table table-hover">
 				        <thead>
 				          <tr>
@@ -40,19 +47,21 @@
 				            <td><a href="@routes.Application.review(expense.id.get.stringify)">@Time.ordinal(expense.startDate) @expense.startDate.toString("MMM. yyyy") - @Time.ordinal(expense.endDate) @expense.endDate.toString("MMM. yyyy")</a></td>
 				            <td><a href="@routes.Application.review(expense.id.get.stringify)">@expense.author</a></td>
 				            <td class="right"><a href="@routes.Application.review(expense.id.get.stringify)">@expense.totalAmount €</a></td>
-				            <td>@(expense.status match { 
-				            	case "draft" => <span class="label label-default">draft</span>
-	            				case "submitted" => <span class="label label-info">submitted</span>
+				            <td>@(expense.status match {
+				            	case "submitted" => <span class="label label-info">submitted</span>
+                      case "approved" => <span class="label label-success">approved</span>
+                      case "rejected" => <span class="label label-warning">rejected</span>
+
 	            			})</span></td>
 				          </tr>
 				         }
-  
+
 				        </tbody>
 				      </table>
 	            </div>
 	        </div>
 	    </div>
-	    
+
          <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 		  <div class="modal-dialog">
 		    <div class="modal-content">
@@ -61,7 +70,7 @@
 		        <h4 class="modal-title">Not yet implemented</h4>
 		      </div>
 		      <div class="modal-body">
-		        <p>Fee free to contribute to the project ;)</p>
+		        <p>Feel free to contribute to the project ;)</p>
 		      </div>
 		      <div class="modal-footer">
 		        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
@@ -72,7 +81,7 @@
 		<script>
 		$("div.modal-body").emoticonize();
 		</script>
-               
+
 	</div>
 </div>
 

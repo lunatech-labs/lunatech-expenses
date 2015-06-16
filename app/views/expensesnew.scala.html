@@ -3,18 +3,18 @@
 @import org.joda.time.DateTime
 @main("") {
 @menu(username, "expenses")
-  
+
  <div id="Wrapper">
     <div id="Container">
 	    <div class="left">
 	        <div class="col">
 	            <div class="chat-wrapper">
 
-	            <div class="pull-right"><h3>@(expense("status").value.getOrElse("") match { 
+	            <div class="pull-right"><h3>@(expense("status").value.getOrElse("") match {
 	            	case "draft" => <span class="label label-default">draft</span>
 	            	case _ => <span class="label label-warning">?</span>
 	            })</h3></div>
-		           
+
 	            	<h3 style="font-variant: small-caps">Create a new expense form</h3>
 
 	            	 @flash.get("success").map { message =>
@@ -37,7 +37,7 @@
 	            		<input type="hidden" value="@expense("author").value" name="author"/>
 	            		<input type="hidden" value="@expense("status").value" name="status"/>
 	            		<input type="hidden" value="@expense("email").value" name="email"/>
-	            		
+
 	            		<h4 class="timeline"><span id="start">@Time.ordinal(startDate) @startDate.toString("MMM. yyyy") </span>@if(expense("status").value.getOrElse("") == "draft") { <span id="editStart" class="edit"><a >edit</a></span>}- <span id="end">@Time.ordinal(endDate) @endDate.toString("MMM. yyyy") </span>@if(expense("status").value.getOrElse("") == "draft") { <span id="editEnd" class="edit"><a >edit</a></span>}</h4>
 		            	<div style="margin: 50px 0 20px">
 		            		@if(expense("status").value.getOrElse("")=="draft"){
@@ -133,7 +133,7 @@
 					       <script>
 		                    var date = $('#date').datepicker({format: 'dd/mm/yyyy'});
    							@if(expense("status").value.getOrElse("") == "draft") {
-					          
+
 		                   	$('#editStart,#start').on('click', function(evt) {
 		                   		evt.preventDefault()
 		                   		var width = $('#start').width();
@@ -147,7 +147,7 @@
 		                   		})
 		                   		$('#editStart').hide();
 								$('#startText').focus();
-		                   	}); 
+		                   	});
 
 		                   	$('#editEnd,#end').on('click', function(evt) {
 		                   		evt.preventDefault()
@@ -163,7 +163,7 @@
 		                   		$('#editEnd').hide();
 								$('#endText').focus();
 		                   	});
-							
+
 	                     	}
 	                      </script>
 	                  </form>
@@ -191,18 +191,18 @@
 		$("div.modal-body").emoticonize();
 		</script>
 	    <div class="sidebar" >
-	    	 <div class="button"><a class="btn btn-primary" role="button" onclick="$('#edit').submit()">Create</a> or <a href="@routes.Application.expensesIndex(startDate.getYear)">Cancel</a> </div>
+	    	 <div class="button"><a class="btn btn-primary" role="button" onclick="$('#edit').submit()">Create</a> or <a href="@routes.Application.expensesIndexPerYear(startDate.getYear)">Cancel</a> </div>
     		<div>
               <h3><a href="">Related actions</a></h3>
               <ul class="related-actions">
             	<li><i class="fa fa-print"></i> <a data-toggle="modal" data-target="#myModal">Print expenses form</a></li>
-            	
-            	
+
+
               </ul>
             </div>
-           
+
         </div>
-               
+
 	</div>
 </div>
 

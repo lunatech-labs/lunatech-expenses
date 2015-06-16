@@ -5,7 +5,7 @@
       <li class="@if(selectedTab == "expenses") { active}"><a href="@routes.Application.index()">Expenses summary</a></li>
       <li class="@if(selectedTab == "recurring") { active}" ><a href="@routes.Application.recurringIndex()" >Recurring expenses</a></li>
       @if(Secure.isAdministrator(username)) {
-      	<li class="@if(selectedTab == "review") { active}" ><a href="@routes.Application.reviewIndex()" >Expenses to review</a></li>      
+      	<li class="@if(selectedTab == "review") { active}" ><a href="@routes.Application.adminIndex()" >All expenses</a></li>      
       }
       <li style="float: right;" class="logout"><a href="@routes.Application.logout()">Sign out</a></li>
       <li style="float: right;" class="signedin">Signed in as @username</li>

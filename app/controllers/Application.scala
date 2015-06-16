@@ -64,10 +64,15 @@ object Application extends Controller with MongoController with Secured {
 
   def index = IsAuthenticated { (username, name) => implicit request =>
 
-  	Redirect(routes.Application.expensesIndex(new DateTime().getYear))
+  	Redirect(routes.Application.expensesIndexPerYear(new DateTime().getYear))
   }
 
-  def expensesIndex(year: Int) = IsAuthenticated { (username, name)  => implicit request =>
+  def adminIndex = IsAuthenticated { (username, name) => implicit request =>
+
+  	Redirect(routes.Application.adminIndexPerYear(new DateTime().getYear))
+  }
+
+  def expensesIndexPerYear(year: Int) = IsAuthenticated { (username, name)  => implicit request =>
     Async {
       val query = BSONDocument(
         "$query" -> BSONDocument("email" -> username, "year" -> year),
@@ -81,15 +86,16 @@ object Application extends Controller with MongoController with Secured {
   }
 
   // TODO: only the admins can view the expenses to review
-  def reviewIndex() = IsAuthenticated { (username, name)  => implicit request =>
+  def adminIndexPerYear(year: Int) = IsAuthenticated { (username, name)  => implicit request =>
     Async {
+      val ids = Seq("submitted", "approved", "rejected")
+      val queryA = BSONDocument("status" -> BSONDocument("$in" -> ids))
       val query = BSONDocument(
-        "$query" -> BSONDocument("status" -> "submitted"),
+        "$query" -> queryA,
         "$orderby" -> BSONDocument("start_date" -> -1))
-
       val found = expenses.find(query).cursor[Expense]
       found.toList().map { expenses =>
-        Ok(views.html.reviewindex(username, expenses))
+        Ok(views.html.reviewindex(username, expenses, year))
       }
     }
   }
@@ -266,7 +272,7 @@ object Application extends Controller with MongoController with Secured {
               Future.sequence(deletions)
             }.flatMap { _ =>
               expenses.remove(BSONDocument("_id" -> new BSONObjectID(id)))
-            }.map(_ => Redirect(routes.Application.expensesIndex(expense.get.startDate.getYear)).flashing("success" -> "Expense has been deleted")).recover { case _ => InternalServerError }
+            }.map(_ => Redirect(routes.Application.expensesIndexPerYear(expense.get.startDate.getYear)).flashing("success" -> "Expense has been deleted")).recover { case _ => InternalServerError }
           }
         }
       }
@@ -653,7 +659,7 @@ object Application extends Controller with MongoController with Secured {
 
          Ok(views.html.login(clientId)).withSession("state" -> state)
        } else {
-         Redirect(routes.Application.index).withSession("email" -> "developer@lunatech.com")
+         Redirect(routes.Application.index).withSession("email" -> "nicolas.leroux@lunatech.com")
        }
      }
 

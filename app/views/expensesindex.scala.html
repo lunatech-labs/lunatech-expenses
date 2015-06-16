@@ -4,7 +4,7 @@
 @main("") {
 @menu(username, "expenses")
 
-  
+
  <div id="Wrapper">
     <div id="Container">
 	    <div class="left">
@@ -24,9 +24,9 @@
                     }
 	            	<div>
 	            		<ul class="pagination">
-						  <li><a href="@routes.Application.expensesIndex(year-1)"><i class="fa fa-chevron-left"></i></a></li>
+						  <li><a href="@routes.Application.expensesIndexPerYear(year-1)"><i class="fa fa-chevron-left"></i></a></li>
 						  <li><a href="">@year</a></li>
-						  <li><a href="@routes.Application.expensesIndex(year+1)"><i class="fa fa-chevron-right"></i></a></li>
+						  <li><a href="@routes.Application.expensesIndexPerYear(year+1)"><i class="fa fa-chevron-right"></i></a></li>
 						</ul>
 	            	</div>
 		              <table class="table table-hover">
@@ -47,7 +47,7 @@
 				            <td><a href="@routes.Application.expensesShow(expense.id.get.stringify)">@Time.ordinal(expense.startDate) @expense.startDate.toString("MMM. yyyy") - @Time.ordinal(expense.endDate) @expense.endDate.toString("MMM. yyyy")</a></td>
 				            <td><a href="@routes.Application.expensesShow(expense.id.get.stringify)">@expense.reference</a></td>
 				            <td class="right"><a href="@routes.Application.expensesShow(expense.id.get.stringify)">€ @expense.totalAmount</a></td>
-				            <td>@(expense.status match { 
+				            <td>@(expense.status match {
 				            	case "draft" => <span class="label label-default">draft</span>
 	            				case "submitted" => <span class="label label-info">submitted</span>
 	            				case "approved" => <span class="label label-success">approved</span>
@@ -56,7 +56,7 @@
 	            			})</span></td>
 				          </tr>
 				         }
-  
+
 				        </tbody>
 				      </table>
 	            </div>
@@ -92,7 +92,7 @@
 		<script>
 		$("div.modal-body").emoticonize();
 		</script>
-               
+
 	</div>
 </div>
 
