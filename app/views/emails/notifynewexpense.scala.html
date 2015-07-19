@@ -1,4 +1,4 @@
-@(expense: Expense, baseUrl: String)
+@(expense: Expense)(implicit request: play.api.mvc.RequestHeader)
 @import java.util.Calendar
 @import java.util.Date
 @import utils.Time
@@ -9,13 +9,13 @@
 <html>
     <head>
         <title>New expense from @expense.author to review</title>
-        <link rel="stylesheet" media="screen" href="@baseUrl@routes.Assets.at("stylesheets/main.css")">
-        <link rel="shortcut icon" type="image/png" href="@baseUrl@routes.Assets.at("images/favicon.png")">
+        <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/main.css").absoluteURL()">
+        <link rel="shortcut icon" type="image/png" href="@routes.Assets.at("images/favicon.png").absoluteURL()">
         <link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css" rel="stylesheet">
-        <link href="@baseUrl@routes.Assets.at("stylesheets/bootstrap.css")" media="all" rel="stylesheet" type="text/css" />
-        <link href="@baseUrl@routes.Assets.at("stylesheets/main.css")" media="all" rel="stylesheet" type="text/css" />
-        <link href="@baseUrl@routes.Assets.at("stylesheets/datepicker.css")" media="screen" rel="stylesheet" title="Theme" type="text/css" />
-        <link href="@baseUrl@routes.Assets.at("stylesheets/jquery.cssemoticons.css")" type="text/css" rel="stylesheet" />
+        <link href="@routes.Assets.at("stylesheets/bootstrap.css").absoluteURL()" media="all" rel="stylesheet" type="text/css" />
+        <link href="@routes.Assets.at("stylesheets/main.css").absoluteURL()" media="all" rel="stylesheet" type="text/css" />
+        <link href="@routes.Assets.at("stylesheets/datepicker.css").absoluteURL()" media="screen" rel="stylesheet" title="Theme" type="text/css" />
+        <link href="@routes.Assets.at("stylesheets/jquery.cssemoticons.css").absoluteURL()" type="text/css" rel="stylesheet" />
     </head>
 
     <body>
@@ -26,12 +26,12 @@
                     <div class="chat-wrapper">
 
                         <h3><img class="img-thumbnail" src="http://www.gravatar.com/avatar/@Time.md5(expense.email)?d=mm&s=80"></h3>
-                        <h4 style="font-variant: small-caps"><a href="@baseUrl@routes.Application.review(expense.id.get.stringify)">Expenses from @expense.author </a></h4><br><br>
-          
+                        <h4 style="font-variant: small-caps"><a href="@routes.Application.review(expense.id.get.stringify).absoluteURL()">Expenses from @expense.author </a></h4><br><br>
+
                         <h4 class="timeline"><span id="start">@Time.ordinal(expense.startDate) @expense.startDate.toString("MMM. yyyy") </span>- <span id="end">@Time.ordinal(expense.endDate) @expense.endDate.toString("MMM. yyyy") </span></h4>
-                            
+
                         <div style="margin: 50px 0 20px">
-                            <h3><a href="@baseUrl@routes.Application.review(expense.id.get.stringify)">@expense.reference</a></h3>
+                            <h3><a href="@routes.Application.review(expense.id.get.stringify).absoluteURL()">@expense.reference</a></h3>
                         </div>
                         <table class="table edit">
                             <thead>
@@ -55,25 +55,25 @@
                                 <td></td>
                                </tr
                                >
-                             } 
+                             }
                              <tr class="total">
                                 <td colspan="3">Total:</td>
                                 <td class="right" id="total">@expense.items.map(_.amount).sum €</td>
                                 <td></td>
-                              </tr>                           
+                              </tr>
                             </tbody>
                         </table>
 
                         <div id="corner_logo">
 
                             <div style="font-size:x-small;color: #BBB; font-family: Arial; text-shadow: 0px 1px 0px white;">Brought to you by </div>
-                            <img src="@baseUrl@routes.Assets.at("images/logo-lunatech-transparent.png")"/>
+                            <img src="@routes.Assets.at("images/logo-lunatech-transparent.png").absoluteURL()"/>
                         </div>
-          
+
                     </div>
                 </div>
             </div>
         </div>
-    </div>       
+    </div>
     </body>
 </html>

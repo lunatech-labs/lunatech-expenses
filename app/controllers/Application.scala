@@ -532,35 +532,35 @@ object Application extends Controller with MongoController with Secured {
 
   // -- Emails
 
-  private def sendCommentEmailToAdmins(username: String, email: String, expense: Expense, comment: Comment) = {
+  private def sendCommentEmailToAdmins(username: String, email: String, expense: Expense, comment: Comment) = { implicit request: RequestHeader =>
     import com.typesafe.plugin._
     import play.api.Play.current
     val mail = use[MailerPlugin].email
     mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") from " + expense.author )
     mail.setRecipient(Play.configuration.getString("email.recipient").get.split(",").toList:_*)
     mail.setFrom(expense.author + " <" + expense.email + ">")
-    val template = views.html.emails.notifycommenttoadmin.render(expense, Play.configuration.getString("baseUrl").get, comment)
+    val template = views.html.emails.notifycommenttoadmin.render(expense, comment, request)
 
     // sends html
     mail.sendHtml(template.body)
   }
 
 
-  private def sendCommentEmailToUser(username: String, email: String, expense: Expense, comment: Comment) = {
+  private def sendCommentEmailToUser(username: String, email: String, expense: Expense, comment: Comment) = { implicit request: RequestHeader =>
     import com.typesafe.plugin._
     import play.api.Play.current
     val mail = use[MailerPlugin].email
     mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ")")
     mail.setRecipient(expense.author + " <" + expense.email + ">")
     mail.setFrom(username + "<" + email + ">")
-    val template = views.html.emails.notifycommenttouser.render(username, expense, Play.configuration.getString("baseUrl").get, comment)
+    val template = views.html.emails.notifycommenttouser.render(username, expense, comment, request)
 
     // sends html
     mail.sendHtml(template.body)
   }
 
 
-  private def sendRejectedEmail(expense: Expense) = {
+  private def sendRejectedEmail(expense: Expense) = { implicit request: RequestHeader =>
     import com.typesafe.plugin._
     import play.api.Play.current
     val mail = use[MailerPlugin].email
@@ -568,13 +568,13 @@ object Application extends Controller with MongoController with Secured {
     mail.setSubject("You expenses expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") have been rejected.")
     mail.setFrom(Play.configuration.getString("email.from").get)
     mail.setRecipient(expense.author + " <" + expense.email + ">")
-    val template = views.html.emails.notifyrefusedexpense.render(expense, Play.configuration.getString("baseUrl").get)
+    val template = views.html.emails.notifyrefusedexpense.render(expense, request)
 
     // sends html
     mail.sendHtml(template.body)
   }
 
-  private def sendSubmittedEmail(expense: Expense) = {
+  private def sendSubmittedEmail(expense: Expense) = { implicit request: RequestHeader =>
     import com.typesafe.plugin._
     import play.api.Play.current
     val mail = use[MailerPlugin].email
@@ -582,14 +582,14 @@ object Application extends Controller with MongoController with Secured {
     mail.setSubject(expense.author + " submitted an expense. Please review it.")
     mail.setFrom(expense.author + " <" + expense.email + ">")
     mail.setRecipient(Play.configuration.getString("email.recipient").get.split(",").toList:_*)
-    val template = views.html.emails.notifynewexpense.render(expense, Play.configuration.getString("baseUrl").get)
+    val template = views.html.emails.notifynewexpense.render(expense, request)
 
     // sends html
     mail.sendHtml(template.body)
   }
 
 
-  private def sendApprovedEmail(expense: Expense) = {
+  private def sendApprovedEmail(expense: Expense) = { implicit request: RequestHeader =>
     import com.typesafe.plugin._
     import play.api.Play.current
     val mail = use[MailerPlugin].email
@@ -597,7 +597,7 @@ object Application extends Controller with MongoController with Secured {
     mail.setSubject("You expenses expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") have been approved.")
     mail.setFrom(Play.configuration.getString("email.from").get)
     mail.setRecipient(expense.author + " <" + expense.email + ">")
-    val template = views.html.emails.notifyapprovedexpense.render(expense, Play.configuration.getString("baseUrl").get)
+    val template = views.html.emails.notifyapprovedexpense.render(expense, request)
 
     // sends html
     mail.sendHtml(template.body)
