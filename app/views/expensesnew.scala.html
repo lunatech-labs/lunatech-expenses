@@ -81,7 +81,7 @@
 					         		// TODO: VALIDATION
 					         		var date = $('#date').val()
 					         		var description = $('#description').val()
-					         		var amount = parseFloat($('#amount').val()).toFixed(2)
+					         		var amount = parseFloat($('#amount').val().replace(",", ".")).toFixed(2)
 					         		var comment = $('#comment').val()
 					         		var number = $('#items').children().size() - 2
 					         		console.log("number " + number)

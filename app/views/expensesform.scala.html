@@ -115,7 +115,7 @@
 					         		$(".validationerror").remove();
 					         		var date = $('#date').val().trim()
 					         		var description = $('#description').val().trim()
-					         		var amount = parseFloat($('#amount').val()).toFixed(2)
+					         		var amount = parseFloat($('#amount').val().replace(',', '.')).toFixed(2)
 					         		var comment = $('#comment').val()
 					         		var number = $('#items').children().size() - 2
 
@@ -133,7 +133,7 @@
 									}
 
 					         		// Do we have a valid amount?
-					         		var floatRegex = '([0-9]*\.[0-9]+|[0-9]+)'; 
+					         		var floatRegex = '([0-9]*\.[0-9]+|[0-9]+)';
 									if (!amount.match(floatRegex)) {
 										$("#amount").parent().append("<span class='validationerror'>Invalid</span>")
 										validationerror = true
