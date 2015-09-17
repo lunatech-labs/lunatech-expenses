@@ -53,7 +53,8 @@ case class Expense (
   startDate: DateTime,
   endDate: DateTime,
   items: Seq[Item] = Seq(),
-  comments: Seq[Comment] = Seq()) {
+  comments: Seq[Comment] = Seq(),
+  statusDetails: Seq[StatusDetails] = Seq()) {
 
   def totalAmount = items.map(_.amount).sum
 
@@ -62,6 +63,8 @@ case class Expense (
 case class Comment(id: Option[String], author: String, email: String, date: DateTime, content: String)
 
 case class Item(date: DateTime, name: String, amount: Double, note: Option[String])
+
+case class StatusDetails(date: DateTime, name: String, status: String)
 
 object Expense {
 
@@ -107,6 +110,24 @@ object Expense {
         "content" -> comment.content)
   }
 
+  implicit object StatusDetailsReader extends BSONDocumentReader[StatusDetails] {
+    def read(doc: BSONDocument) =
+      StatusDetails(
+        doc.getAs[BSONDateTime]("date").map(dt => new DateTime(dt.value, zone)).get,
+        doc.getAs[String]("name").get,
+        doc.getAs[String]("status").get
+      )
+  }
+
+  implicit object StatusDetailsWriter extends BSONDocumentWriter[StatusDetails] {
+    def write(details: StatusDetails): BSONDocument =
+      BSONDocument(
+        "date" -> BSONDateTime(details.date.getMillis),
+        "name" -> details.name,
+        "status" -> details.status
+      )
+  }
+
   implicit object ExpenseBSONReader extends BSONDocumentReader[Expense] {
     def read(doc: BSONDocument): Expense =
       Expense(
@@ -118,7 +139,8 @@ object Expense {
         doc.getAs[BSONDateTime]("start_date").map(dt => new DateTime(dt.value, zone)).get,
         doc.getAs[BSONDateTime]("end_date").map(dt => new DateTime(dt.value, zone)).get,
         doc.getAs[Seq[Item]]("items").get,
-        doc.getAs[Seq[Comment]]("comments").get
+        doc.getAs[Seq[Comment]]("comments").get,
+        doc.getAs[Seq[StatusDetails]]("status_details").getOrElse(Seq.empty[StatusDetails])
       )
   }
   implicit object ExpenseBSONWriter extends BSONDocumentWriter[Expense] {
@@ -128,12 +150,13 @@ object Expense {
         "status" -> expense.status,
         "reference" -> expense.reference,
         "author" -> expense.author,
-        "email" -> expense.email,       
+        "email" -> expense.email,
         "start_date" -> BSONDateTime(expense.startDate.toDateTime(zone).getMillis),
         "end_date" -> BSONDateTime(expense.endDate.toDateTime(zone).getMillis),
         "items" -> expense.items,
         "comments" -> expense.comments,
-        "year" -> expense.startDate.getYear // TODO: get the year from the start date
+        "year" -> expense.startDate.getYear, // TODO: get the year from the start date
+        "status_details" -> expense.statusDetails
       )
   }
 }

@@ -37,6 +37,7 @@
 				            <th>Author</th>
 				            <th class="right">Amount (BTW incl.)</th>
 				            <th>Status</th>
+							<th>Approved/Rejected by</th>
 				          </tr>
 				        </thead>
 				        <tbody>
@@ -52,7 +53,13 @@
                       case "approved" => <span class="label label-success">approved</span>
                       case "rejected" => <span class="label label-warning">rejected</span>
 
-	            			})</span></td>
+	            			})</td>
+
+							<td>@(expense.statusDetails.filter(details => details.status.equals("approved") || details.status.equals("rejected")).lastOption.map(status => {
+								status.name + " - " + status.date.toString("dd MMM. yyyy")
+							 }))</td>
+
+
 				          </tr>
 				         }
 

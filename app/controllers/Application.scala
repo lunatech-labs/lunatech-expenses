@@ -61,7 +61,6 @@ object Application extends Controller with MongoController with Secured {
       Logger.info(s"Checked index, result is $index")
   }
 
-
   def index = IsAuthenticated { (username, name) => implicit request =>
 
   	Redirect(routes.Application.expensesIndexPerYear(new DateTime().getYear))
@@ -116,7 +115,7 @@ object Application extends Controller with MongoController with Secured {
             val filesWithId = files.map { file =>
               file.id.asInstanceOf[BSONObjectID].stringify -> file
             }
-            Ok(views.html.reviewform(username, name, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.items, expense.comments, Some(filesWithId)))
+            Ok(views.html.reviewform(username, name, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.statusDetails, expense.items, expense.comments, Some(filesWithId)))
           }
         }.getOrElse(Future(NotFound))
       } yield result
@@ -140,7 +139,7 @@ object Application extends Controller with MongoController with Secured {
             val filesWithId = files.map { file =>
               file.id.asInstanceOf[BSONObjectID].stringify -> file
             }
-            Ok(views.html.expensesform(username, name, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.items, expense.comments, Some(filesWithId)))
+            Ok(views.html.expensesform(username, name, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.statusDetails, expense.items, expense.comments, Some(filesWithId)))
           }
         }.getOrElse(Future(NotFound))
       } yield result
@@ -245,7 +244,7 @@ object Application extends Controller with MongoController with Secured {
     expenseForm.bindFromRequest.fold(
       errors => {
         // TODO: Format the dates and extract the items
-        BadRequest(views.html.expensesform(username, name, new DateTime(), new DateTime(), errors, Seq(), Seq()))
+        BadRequest(views.html.expensesform(username, name, new DateTime(), new DateTime(), errors, Seq(), Seq(), Seq()))
       },
       expense => Async {
         import models.Expense.ItemBSONWriter
@@ -285,7 +284,7 @@ object Application extends Controller with MongoController with Secured {
         val objectId = new BSONObjectID(id)
         val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
         futureExpense.map { expense =>
-          BadRequest(views.html.expensesform(username, name, expense.get.startDate, expense.get.endDate, errors, expense.get.items, expense.get.comments))
+          BadRequest(views.html.expensesform(username, name, expense.get.startDate, expense.get.endDate, errors, expense.get.statusDetails, expense.get.items, expense.get.comments))
         }
       },
       expense => AsyncResult {
@@ -313,7 +312,7 @@ object Application extends Controller with MongoController with Secured {
         val objectId = new BSONObjectID(id)
         val futureExpense = expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
         futureExpense.map { expense =>
-          BadRequest(views.html.expensesform(username, name, expense.get.startDate, expense.get.endDate, expenseForm, expense.get.items, expense.get.comments))
+          BadRequest(views.html.expensesform(username, name, expense.get.startDate, expense.get.endDate, expenseForm, expense.get.statusDetails, expense.get.items, expense.get.comments))
         }
       },
       comment => Async {
@@ -361,7 +360,7 @@ object Application extends Controller with MongoController with Secured {
 
   def submitExpense(id: String) = IsAuthenticated { (username, name)  => implicit request =>
     Async {
-      val result = convertTo(id, "submitted", Redirect(routes.Application.expensesShow(id)).flashing("success" -> "Expense has been submitted."))
+      val result = convertTo(id, "submitted", name, Redirect(routes.Application.expensesShow(id)).flashing("success" -> "Expense has been submitted."))
       val objectId = new BSONObjectID(id)
       val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
       futureExpense.flatMap { expense =>
@@ -375,7 +374,7 @@ object Application extends Controller with MongoController with Secured {
   // TODO: only admin can do that
   def approveExpense(id: String) = IsAuthenticated { (username, name)  => implicit request =>
     Async {
-      var result = convertTo(id, "approved", Redirect(routes.Application.review(id)).flashing("success" -> "Expense has been approved."))
+      var result = convertTo(id, "approved", name, Redirect(routes.Application.review(id)).flashing("success" -> "Expense has been approved."))
       val objectId = new BSONObjectID(id)
       val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
       futureExpense.flatMap { expense =>
@@ -388,7 +387,7 @@ object Application extends Controller with MongoController with Secured {
   // TODO: only admin can do that
   def  rejectExpense(id: String) = IsAuthenticated { (username, name)  => implicit request =>
     Async {
-      var result = convertTo(id, "rejected",  Redirect(routes.Application.review(id)).flashing("success" -> "Expense has been rejected."))
+      var result = convertTo(id, "rejected", name, Redirect(routes.Application.review(id)).flashing("success" -> "Expense has been rejected."))
       val objectId = new BSONObjectID(id)
       val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
       futureExpense.flatMap { expense =>
@@ -399,14 +398,21 @@ object Application extends Controller with MongoController with Secured {
   }
 
   // This should be a private function that is called by specialized function
-  private def convertTo(id: String, status: String, action: Result): Future[Result] = {
-        val objectId = new BSONObjectID(id)
-        val modifier = BSONDocument(
-          "$set" -> BSONDocument(
-            "status" -> BSONString(status)))
-        expenses.update(BSONDocument("_id" -> objectId), modifier).map { _ =>
-          action
-        }
+  private def convertTo(id: String, status: String, name: String, action: Result): Future[Result] = {
+    import models.Expense.StatusDetailsWriter
+
+    val objectId = new BSONObjectID(id)
+    val futureExpense = expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
+    futureExpense.flatMap { expense =>
+      val statusDetails = expense.get.statusDetails :+ StatusDetails(new DateTime(), name, status)
+      val modifier = BSONDocument(
+        "$set" -> BSONDocument(
+          "status" -> BSONString(status),
+          "status_details" -> statusDetails))
+      expenses.update(BSONDocument("_id" -> objectId), modifier).map { _ =>
+        action
+      }
+    }
   }
 
  def expensesNewForm = IsAuthenticated { (username, name)  => implicit request =>

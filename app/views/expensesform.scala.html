@@ -1,4 +1,4 @@
-@(username: String, name: String, startDate: org.joda.time.DateTime, endDate: org.joda.time.DateTime, expense: Form[Expense], items: Seq[Item], comments: Seq[Comment],files: Option[List[(String, reactivemongo.api.gridfs.ReadFile[reactivemongo.bson.BSONValue])]] = None)(implicit flash: play.api.mvc.Flash)
+@(username: String, name: String, startDate: org.joda.time.DateTime, endDate: org.joda.time.DateTime, expense: Form[Expense], statusDetails: Seq[StatusDetails], items: Seq[Item], comments: Seq[Comment],files: Option[List[(String, reactivemongo.api.gridfs.ReadFile[reactivemongo.bson.BSONValue])]] = None)(implicit flash: play.api.mvc.Flash)
 @import utils._
 @import org.joda.time.DateTime
 @main("") {
@@ -16,8 +16,12 @@
 	            	case "approved" => <span class="label label-success">approved</span>
 	            	case "rejected" => <span class="label label-warning">rejected</span>
 	            	case _ => <span class="label label-warning">?</span>
-	            })</h3></div>
-		           
+	            })</h3>
+					<h5>@(statusDetails.filter(details => details.status.equals("approved") || details.status.equals("rejected")).lastOption.map(status => {
+						"by " + status.name + " (" + status.date.toString("dd MMM. yyyy") + ")"
+					}))</h5>
+				</div>
+
 	            	<h3 style="font-variant: small-caps">Expenses <span class="print">(@name)</span></h3>
 	            	@flash.get("success").map { message =>
                         <div class="alert alert-info">
