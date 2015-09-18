@@ -16,7 +16,10 @@
 	            	case "approved" => <span class="label label-success">approved</span>
 	            	case "rejected" => <span class="label label-warning">rejected</span>
 	            	case _ => <span class="label label-warning">?</span>
-	            })</h3></div>
+	            })</h3>
+					<h5>@(statusDetails.filter(details => details.status.equals("approved") || details.status.equals("rejected")).lastOption.map(status => {
+						"by " + status.name + " (" + status.date.toString("dd MMM. yyyy") + ")"
+					}))</h5></div>
 		           
 	            	<h3 style="font-variant: small-caps">Expenses from @expense("author").value</h3>
 	            	@flash.get("success").map { message =>
