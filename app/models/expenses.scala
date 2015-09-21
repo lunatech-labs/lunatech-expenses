@@ -46,6 +46,7 @@ object RecurringExpense {
  
 case class Expense (
   id: Option[BSONObjectID],
+  submitDate: DateTime,
   status: String,
   reference: Option[String],
   author: String,
@@ -132,6 +133,7 @@ object Expense {
     def read(doc: BSONDocument): Expense =
       Expense(
         doc.getAs[BSONObjectID]("_id"),
+        doc.getAs[BSONDateTime]("submit_date").map(dt => new DateTime(dt.value, zone)).getOrElse(new DateTime()),
         doc.getAs[String]("status").get,
         doc.getAs[String]("reference"),
         doc.getAs[String]("author").get,
@@ -147,6 +149,7 @@ object Expense {
     def write(expense: Expense): BSONDocument =
       BSONDocument(
         "_id" -> expense.id.getOrElse(BSONObjectID.generate),
+        "submit_date" -> BSONDateTime(expense.submitDate.toDateTime(zone).getMillis),
         "status" -> expense.status,
         "reference" -> expense.reference,
         "author" -> expense.author,

@@ -33,6 +33,7 @@
 				        <thead>
 				          <tr>
 				            <th>#</th>
+							<th>Submitted on</th>
 				            <th>Period</th>
 				            <th>Author</th>
 				            <th class="right">Amount (BTW incl.)</th>
@@ -45,6 +46,7 @@
 				         @expenses.zipWithIndex.map { case (expense, index) =>
  						   <tr>
 				            <td class="number">@(index+1)</td>
+							<td><a href="@routes.Application.review(expense.id.get.stringify)">@expense.submitDate.toString("dd-MM-yyyy")</a></td>
 				            <td><a href="@routes.Application.review(expense.id.get.stringify)">@Time.ordinal(expense.startDate) @expense.startDate.toString("MMM. yyyy") - @Time.ordinal(expense.endDate) @expense.endDate.toString("MMM. yyyy")</a></td>
 				            <td><a href="@routes.Application.review(expense.id.get.stringify)">@expense.author</a></td>
 				            <td class="right"><a href="@routes.Application.review(expense.id.get.stringify)">@expense.totalAmount €</a></td>

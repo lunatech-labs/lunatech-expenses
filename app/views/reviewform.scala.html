@@ -1,4 +1,4 @@
-@(username: String, name: String, startDate: org.joda.time.DateTime, endDate: org.joda.time.DateTime, expense: Form[Expense], statusDetails: Seq[StatusDetails], items: Seq[Item], comments: Seq[Comment],files: Option[List[(String, reactivemongo.api.gridfs.ReadFile[reactivemongo.bson.BSONValue])]] = None)(implicit flash: play.api.mvc.Flash)
+@(username: String, name: String, submitDate: org.joda.time.DateTime, startDate: org.joda.time.DateTime, endDate: org.joda.time.DateTime, expense: Form[Expense], statusDetails: Seq[StatusDetails], items: Seq[Item], comments: Seq[Comment],files: Option[List[(String, reactivemongo.api.gridfs.ReadFile[reactivemongo.bson.BSONValue])]] = None)(implicit flash: play.api.mvc.Flash)
 @import utils._
 @import org.joda.time.DateTime
 @main("") {
@@ -22,6 +22,7 @@
 					}))</h5></div>
 		           
 	            	<h3 style="font-variant: small-caps">Expenses from @expense("author").value</h3>
+					<h5 class="timeline"><span id="submitted">Submitted on @Time.ordinal(submitDate) @submitDate.toString("MMM. yyyy")</span></h5>
 	            	@flash.get("success").map { message =>
                         <div class="alert alert-info">
                              @message
@@ -37,7 +38,8 @@
 	            	<form id="edit" action="@routes.Application.expensesEdit(expense("id").value.getOrElse(""))" method="POST">
 
 						<input type="hidden" value="@expense("id").value" name="id"/>
-	            		<input id="startDate" type="hidden" value="@expense("startDate").value" name="startDate"/>
+	            		<input type="hidden" value="@expense("submitDate").value name="submitDate"/>
+						<input id="startDate" type="hidden" value="@expense("startDate").value" name="startDate"/>
 	            		<input id="endDate" type="hidden" value="@expense("endDate").value" name="endDate"/>
 	            		<input type="hidden" value="@expense("author").value" name="author"/>
 	            		<input type="hidden" value="@expense("status").value" name="status"/>

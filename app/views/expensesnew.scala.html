@@ -32,6 +32,7 @@
 	            	<form id="edit" action="@routes.Application.expensesNew()" method="POST">
 
 						<input type="hidden" value="@expense("id").value" name="id"/>
+						<input type="hidden" value="@expense("submitDate").value" name="submitDate"/>
 	            		<input id="startDate" type="hidden" value="@expense("startDate").value" name="startDate"/>
 	            		<input id="endDate" type="hidden" value="@expense("endDate").value" name="endDate"/>
 	            		<input type="hidden" value="@expense("author").value" name="author"/>

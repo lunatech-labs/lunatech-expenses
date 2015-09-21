@@ -91,7 +91,7 @@ object Application extends Controller with MongoController with Secured {
       val queryA = BSONDocument("status" -> BSONDocument("$in" -> ids))
       val query = BSONDocument(
         "$query" -> queryA,
-        "$orderby" -> BSONDocument("start_date" -> -1))
+        "$orderby" -> BSONDocument("submit_date" -> -1, "_id" -> -1))
       val found = expenses.find(query).cursor[Expense]
       found.toList().map { expenses =>
         Ok(views.html.reviewindex(username, expenses, year))
@@ -115,7 +115,7 @@ object Application extends Controller with MongoController with Secured {
             val filesWithId = files.map { file =>
               file.id.asInstanceOf[BSONObjectID].stringify -> file
             }
-            Ok(views.html.reviewform(username, name, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.statusDetails, expense.items, expense.comments, Some(filesWithId)))
+            Ok(views.html.reviewform(username, name, expense.submitDate, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.statusDetails, expense.items, expense.comments, Some(filesWithId)))
           }
         }.getOrElse(Future(NotFound))
       } yield result
@@ -139,7 +139,7 @@ object Application extends Controller with MongoController with Secured {
             val filesWithId = files.map { file =>
               file.id.asInstanceOf[BSONObjectID].stringify -> file
             }
-            Ok(views.html.expensesform(username, name, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.statusDetails, expense.items, expense.comments, Some(filesWithId)))
+            Ok(views.html.expensesform(username, name, expense.submitDate, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.statusDetails, expense.items, expense.comments, Some(filesWithId)))
           }
         }.getOrElse(Future(NotFound))
       } yield result
@@ -186,6 +186,7 @@ object Application extends Controller with MongoController with Secured {
           """[a-fA-F0-9]{24}""".r,
           "constraint.objectId",
           "error.objectId")),
+          "submitDate" -> of[Long],
           "status" -> nonEmptyText,
           "reference" -> optional(text),
           "author" -> nonEmptyText,
@@ -215,9 +216,10 @@ object Application extends Controller with MongoController with Secured {
           }
           )
         )
-        { (id, status, reference, author, email, startDate, endDate, items) =>
+        { (id, submitDate, status, reference, author, email, startDate, endDate, items) =>
           Expense(
             id.map(new BSONObjectID(_)),
+            new DateTime(),
             status,
             reference,
             author,
@@ -229,6 +231,7 @@ object Application extends Controller with MongoController with Secured {
         } { expense => {
           Some(
             (expense.id.map(_.stringify),
+              expense.submitDate.getMillis,
               expense.status,
               expense.reference,
               expense.author,
@@ -244,7 +247,7 @@ object Application extends Controller with MongoController with Secured {
     expenseForm.bindFromRequest.fold(
       errors => {
         // TODO: Format the dates and extract the items
-        BadRequest(views.html.expensesform(username, name, new DateTime(), new DateTime(), errors, Seq(), Seq(), Seq()))
+        BadRequest(views.html.expensesform(username, name, new DateTime(), new DateTime(), new DateTime(), errors, Seq(), Seq(), Seq()))
       },
       expense => Async {
         import models.Expense.ItemBSONWriter
@@ -284,7 +287,7 @@ object Application extends Controller with MongoController with Secured {
         val objectId = new BSONObjectID(id)
         val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
         futureExpense.map { expense =>
-          BadRequest(views.html.expensesform(username, name, expense.get.startDate, expense.get.endDate, errors, expense.get.statusDetails, expense.get.items, expense.get.comments))
+          BadRequest(views.html.expensesform(username, name, expense.get.submitDate, expense.get.startDate, expense.get.endDate, errors, expense.get.statusDetails, expense.get.items, expense.get.comments))
         }
       },
       expense => AsyncResult {
@@ -312,7 +315,7 @@ object Application extends Controller with MongoController with Secured {
         val objectId = new BSONObjectID(id)
         val futureExpense = expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
         futureExpense.map { expense =>
-          BadRequest(views.html.expensesform(username, name, expense.get.startDate, expense.get.endDate, expenseForm, expense.get.statusDetails, expense.get.items, expense.get.comments))
+          BadRequest(views.html.expensesform(username, name, expense.get.submitDate, expense.get.startDate, expense.get.endDate, expenseForm, expense.get.statusDetails, expense.get.items, expense.get.comments))
         }
       },
       comment => Async {
@@ -438,6 +441,7 @@ object Application extends Controller with MongoController with Secured {
           }
           val expense = new Expense (
                 None,
+                new DateTime(),
                 "draft",
                 None,
                 name,
