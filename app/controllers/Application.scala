@@ -88,7 +88,7 @@ object Application extends Controller with MongoController with Secured {
   def adminIndexPerYear(year: Int) = IsAuthenticated { (username, name)  => implicit request =>
     Async {
       val ids = Seq("submitted", "approved", "rejected")
-      val queryA = BSONDocument("status" -> BSONDocument("$in" -> ids))
+      val queryA = BSONDocument("status" -> BSONDocument("$in" -> ids), "year" -> year)
       val query = BSONDocument(
         "$query" -> queryA,
         "$orderby" -> BSONDocument("submit_date" -> -1, "_id" -> -1))
