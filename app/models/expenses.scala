@@ -59,6 +59,7 @@ case class Expense (
 
   def totalAmount = items.map(_.amount).sum
 
+  def withDateRange: Expense = this.copy(startDate = items.map(_.date).sortBy(_.getMillis).head, endDate = items.map(_.date).sortBy(_.getMillis).last)
 }
 
 case class Comment(id: Option[String], author: String, email: String, date: DateTime, content: String)

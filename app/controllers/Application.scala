@@ -251,7 +251,7 @@ object Application extends Controller with MongoController with Secured {
       },
       expense => Async {
         import models.Expense.ItemBSONWriter
-        val doc = BSON.write(expense)
+        val doc = BSON.write(expense.withDateRange)
         val id = doc.getAs[BSONObjectID]("_id")
         expenses.insert(doc).map{ lastError =>
           Redirect(routes.Application.expensesShow(id.get.stringify)).flashing("success" -> "Your expense has been created")
@@ -435,10 +435,10 @@ object Application extends Controller with MongoController with Secured {
           val monthlyItems = recurring.map { recurring =>
               Item(new DateTime(), recurring.description, recurring.amount, Option("Monthly payment"))
           }
-          val (startDate, endDate) = previous match {
-            case Some(ex) => (previous.get.endDate.plusDays(1), previous.get.endDate.plusMonths(1))
+        /*  val (startDate, endDate) = previous match {
+            case Some(ex) => (previous.get.endDate.plusDays(0), previous.get.endDate.plusMonths(0))
             case None => (new DateTime(), new DateTime().plusMonths(1))
-          }
+          } */
           val expense = new Expense (
                 None,
                 new DateTime(),
@@ -446,8 +446,8 @@ object Application extends Controller with MongoController with Secured {
                 None,
                 name,
                 username,
-                startDate,
-                endDate,
+                new DateTime(),
+                new DateTime(),
                 monthlyItems)
          Ok(views.html.expensesnew(username, name, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.items, expense.comments))
       }

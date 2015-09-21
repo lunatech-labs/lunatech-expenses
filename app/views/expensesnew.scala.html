@@ -39,7 +39,6 @@
 	            		<input type="hidden" value="@expense("status").value" name="status"/>
 	            		<input type="hidden" value="@expense("email").value" name="email"/>
 
-	            		<h4 class="timeline"><span id="start">@Time.ordinal(startDate) @startDate.toString("MMM. yyyy") </span>@if(expense("status").value.getOrElse("") == "draft") { <span id="editStart" class="edit"><a >edit</a></span>}- <span id="end">@Time.ordinal(endDate) @endDate.toString("MMM. yyyy") </span>@if(expense("status").value.getOrElse("") == "draft") { <span id="editEnd" class="edit"><a >edit</a></span>}</h4>
 		            	<div style="margin: 50px 0 20px">
 		            		@if(expense("status").value.getOrElse("")=="draft"){
 		            		<input class="form-control" placeholder="Optional: reference" name="reference" value="@expense("reference").value"><span class="error">@expense.error("reference").map(x => Messages(x.message))</span>
