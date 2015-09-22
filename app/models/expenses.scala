@@ -134,7 +134,7 @@ object Expense {
     def read(doc: BSONDocument): Expense =
       Expense(
         doc.getAs[BSONObjectID]("_id"),
-        doc.getAs[BSONDateTime]("submit_date").map(dt => new DateTime(dt.value, zone)).getOrElse(new DateTime()),
+        doc.getAs[BSONDateTime]("submit_date").map(dt => new DateTime(dt.value, zone)).getOrElse(new DateTime(2015, 9, 21, 12, 0, 0, 0)),
         doc.getAs[String]("status").get,
         doc.getAs[String]("reference"),
         doc.getAs[String]("author").get,
