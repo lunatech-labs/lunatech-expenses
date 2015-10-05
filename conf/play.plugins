@@ -1,2 +1,2 @@
-400:play.modules.reactivemongo.ReactiveMongoPlugin
-1500:com.typesafe.plugin.CommonsMailerPlugin
+1100:play.modules.reactivemongo.ReactiveMongoPlugin
+1500:play.api.libs.mailer.CommonsMailerPlugin

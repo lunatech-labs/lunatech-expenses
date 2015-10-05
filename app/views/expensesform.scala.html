@@ -1,16 +1,16 @@
-@(username: String, name: String, submitDate: org.joda.time.DateTime, startDate: org.joda.time.DateTime, endDate: org.joda.time.DateTime, expense: Form[Expense], statusDetails: Seq[StatusDetails], items: Seq[Item], comments: Seq[Comment],files: Option[List[(String, reactivemongo.api.gridfs.ReadFile[reactivemongo.bson.BSONValue])]] = None)(implicit flash: play.api.mvc.Flash)
+@(username: String, name: String, submitDate: org.joda.time.DateTime, startDate: org.joda.time.DateTime, endDate: org.joda.time.DateTime, expense: Form[Expense], statusDetails: Seq[StatusDetails], items: Seq[Item], comments: Seq[Comment],files: Option[List[(String, reactivemongo.api.gridfs.ReadFile[play.modules.reactivemongo.json.JSONSerializationPack.type, play.api.libs.json.JsString])]] = None)(implicit flash: play.api.mvc.Flash)
 @import utils._
 @import org.joda.time.DateTime
 @main("") {
 @menu(username, "expenses")
-  
+
  <div id="Wrapper">
     <div id="Container">
 	    <div class="left">
 	        <div class="col">
 	            <div class="chat-wrapper">
 
-	            <div class="pull-right status"><h3>@(expense("status").value.getOrElse("") match { 
+	            <div class="pull-right status"><h3>@(expense("status").value.getOrElse("") match {
 	            	case "draft" => <span class="label label-default">draft</span>
 	            	case "submitted" => <span class="label label-info">submitted</span>
 	            	case "approved" => <span class="label label-success">approved</span>
@@ -45,7 +45,7 @@
 	            		<input type="hidden" value="@expense("author").value" name="author"/>
 	            		<input type="hidden" value="@expense("email").value" name="email"/>
 	            		<input type="hidden" value="@expense("status").value" name="status"/>
-	            	
+
 		            	<div style="margin: 50px 0 20px">
 		            		@if(expense("status").value.getOrElse("")=="draft"){
 		            		<input class="form-control" placeholder="Optional: reference" name="reference" value="@expense("reference").value"><span class="error">@expense.error("reference").map(x => Messages(x.message))</span>
@@ -93,18 +93,18 @@
 								    var day = parseInt(parts[0], 10);
 								    var month = parseInt(parts[1], 10);
 								    var year = parseInt(parts[2], 10);
-								 
+
 								    // Check the ranges of month and year
 								    if(year < 1000 || year > 3000 || month == 0 || month > 12)
 								        return false;
-								 
+
 
 								    var monthLength = [ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ];
 
 								    // Adjust for leap years
 								    if(year % 400 == 0 || (year % 100 != 0 && year % 4 == 0))
 								        monthLength[1] = 29;
-								 
+
 
 								    // Check the range of the day
 								    return day > 0 && day <= monthLength[month - 1];
@@ -122,7 +122,7 @@
 
 					         		// Do we have a valid date?
 					         		var validationerror = false
-					         		
+
 									if (!isValidDate(date)) {
 										$("#date").parent().append("<span class='validationerror'>Invalid date</span>")
 										validationerror = true
@@ -140,7 +140,7 @@
 										validationerror = true
 									}
 
-									if (validationerror) 
+									if (validationerror)
 										return false
 
 					         		// Add a new row to the table
@@ -169,9 +169,9 @@
 					         		$("#total").text("€ " + totalAmount.toFixed(2));
 					         	}
 
-					         	
 
-					         	
+
+
 					         </script>
 					         @if(expense("status").value.getOrElse("") == "draft") {
 					          <tr id="addItem" style="background-color: #ffffdf">
@@ -195,12 +195,12 @@
 					      <div id="signature">
 							<h4>Date: @(new DateTime().toString("dd MM yyyy"))</h4>
 							<h4 style="float:left; margin: 50px">Signature:</h4><h4 style="float:left; margin: 50px; ">Approval:</h4>
-						  </div>     		
+						  </div>
 
 					       <script>
 		                    var date = $('#date').datepicker({format: 'dd/mm/yyyy'});
    							@if(expense("status").value.getOrElse("") == "draft") {
-					          
+
 		                   	$('#editStart,#start').on('click', function(evt) {
 		                   		evt.preventDefault()
 		                   		var width = $('#start').width();
@@ -214,7 +214,7 @@
 		                   		})
 		                   		$('#editStart').hide();
 								$('#startText').focus();
-		                   	}); 
+		                   	});
 
 		                   	$('#editEnd,#end').on('click', function(evt) {
 		                   		evt.preventDefault()
@@ -230,8 +230,8 @@
 		                   		$('#editEnd').hide();
 								$('#endText').focus();
 		                   	});
-							
-	                     	}	
+
+	                     	}
 	                      </script>
 	                  </form>
 
@@ -245,21 +245,21 @@
 								  <div class="comment-body">
 								   @comment.content
 								  </div>
-							  <!-- TODO: limit the delete to the user that wrote the comment and add reply to the last comment only -->	
+							  <!-- TODO: limit the delete to the user that wrote the comment and add reply to the last comment only -->
 							  <div class="action" style="font-size: 11px; margin-right:20px; text-align: right">@if((index + 1) == comments.size){<a onclick="$('#reply').slideToggle();">Reply</a> • }@if(username == comment.email){<a href="@routes.Application.deleteComment(expense("id").value.getOrElse(""), comment.id.getOrElse(""))" onclick="$(this).parent().parent().hide('slow', function() {$(this).remove(); })">Delete</a>}</div>
-					
+
 	 					</div>
 	 				    }
 	 					@if(comments.isEmpty) {
 	 					 <div class="action" style="font-size: 11px; margin-right:20px; text-align: right"><a onclick="$('#reply').slideToggle();">Add Comment</a></div>
-					
+
 	 					}
 						 <form id="reply" style="display:none" action="@routes.Application.addComment(expense("id").value.getOrElse(""))" method="POST">
 				     		<div class="form-group">
 						    	<div class="">
 						    		<input type="hidden" name="author" value="@name"/>
 						    		<input type="hidden" name="email" value="@username"/>
-						     		
+
 						     		<img src="http://www.gravatar.com/avatar/@utils.Time.md5(username)?d=mm&s=36" /><textarea name="content" class="comment" rows="4" placeholder="Write a comment"></textarea>
 						    	</div>
 						  	</div>
@@ -267,7 +267,7 @@
 						  		<button class="btn btn-primary" role="button">Save</button> Or <a  style="margin-right: 20px" onclick="$('#reply').slideToggle();">Cancel</a>
 						  	</div>
 						</form>
-					</div>	 
+					</div>
 	            </div>
 	        </div>
 	    </div>
@@ -279,7 +279,7 @@
 		        <h4 class="modal-title">Not yet implemented</h4>
 		      </div>
 		      <div class="modal-body">
-		        <p>Fee free to contribute to the project ;) 
+		        <p>Fee free to contribute to the project ;)
 		        </p>
 		      </div>
 		      <div class="modal-footer">
@@ -319,7 +319,7 @@
             	<li><i class="fa fa-check-square-o"></i> <a href="@routes.Application.submitExpense(expense("id").value.getOrElse(""))">Submit your expense</a></li>
             	<li><i class="fa fa-trash-o"></i> <a data-toggle="modal" data-target="#deleteModal" >Delete</a></li>
             	}
-            	
+
               </ul>
             </div>
             <div>
@@ -327,7 +327,7 @@
               <div class="">
               	 <form id="mydropzone" action="@routes.Application.saveAttachments(expense("id").value.getOrElse(""))" class="dropzone dz-clickable dz-started"></form>
 		      </div>
-		      
+
               <ul id="receipts" class="related-actions files ">
 			    @if(files.isDefined) {
 			      @files.get.map { file =>
@@ -337,21 +337,21 @@
      </ul>
               <script>
               Dropzone.autoDiscover = false;
-				
+
 		      $( document ).ready(function() {
 
 		      	Dropzone.autoDiscover = false;
 				var myDropzone = new Dropzone("#mydropzone", { url: "@routes.Application.saveAttachments(expense("id").value.getOrElse(""))",
   				  previewsContainer: "#receipts",
-				  createImageThumbnails: false, 
+				  createImageThumbnails: false,
 				  init: function() {
-   					 this.on("complete", function(file) { 
-   					 	var progress = $("#receipts div.progress"); 
-   					 	var parent = progress.parent(); 
-   					 	progress.remove(); 
+   					 this.on("complete", function(file) {
+   					 	var progress = $("#receipts div.progress");
+   					 	var parent = progress.parent();
+   					 	progress.remove();
    					 	parent.append('<button type="button" class="close" aria-hidden="true" onclick="$(this).parent().hide(\'slow\', function() {$(this).remove()})">&times;</button>');
    					 });
-  				  },	
+  				  },
   				  dictDefaultMessage: "<div style=\"text-align:center\">Drop your receipts here<br><i style='font-size: 32pt' class=\"fa fa-cloud-upload\"></i><br></div>",
 
 				  previewTemplate: '<li><i class="fa fa-file-o"></i> <a href=""><span data-dz-name> </span></a> <div class="progress"><div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" data-dz-uploadprogress><span class="sr-only"></span></div></div> '})
@@ -360,7 +360,7 @@
 		      </script>
             </div>
         </div>
-               
+
 	</div>
 </div>
 

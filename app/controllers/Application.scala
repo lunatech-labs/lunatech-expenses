@@ -31,9 +31,17 @@ import com.google.gdata.data.appsforyourdomain.provisioning.UserFeed
 
 import com.lunatech.openconnect.Authenticate
 
-import reactivemongo.api.gridfs.GridFS
-import reactivemongo.api.gridfs.Implicits.DefaultReadFileReader
-import reactivemongo.api.collections.default.BSONCollection
+import reactivemongo.api.gridfs.{ // ReactiveMongo GridFS
+  DefaultFileToSave, FileToSave, GridFS, ReadFile
+}
+import reactivemongo.api.gridfs.Implicits._
+import play.modules.reactivemongo.json._
+import play.modules.reactivemongo.json.collection._
+
+import MongoController.readFileReads
+
+
+import reactivemongo.api.collections.bson.BSONCollection
 import reactivemongo.bson._
 import reactivemongo.api._
 import models._
@@ -43,11 +51,16 @@ import play.api.data.Forms._
 import play.api.data.format.Formats._
 import play.api.data.validation.Constraints._
 import org.joda.time.DateTime
+import play.api.Play.current
+
+import play.libs.mailer._
+
 
 
 object Application extends Controller with MongoController with Secured {
 
   val GOOGLE_URL = "https://accounts.google.com/o/oauth2/auth"
+  type JSONReadFile = ReadFile[JSONSerializationPack.type, JsString]
 
 
 
@@ -56,6 +69,7 @@ object Application extends Controller with MongoController with Secured {
 
   val gridFS = new GridFS(db)
 
+
   gridFS.ensureIndex().onComplete {
     case index =>
       Logger.info(s"Checked index, result is $index")
@@ -63,16 +77,15 @@ object Application extends Controller with MongoController with Secured {
 
   def index = IsAuthenticated { (username, name) => implicit request =>
 
-  	Redirect(routes.Application.expensesIndexPerYear(new DateTime().getYear))
+  	Future(Redirect(routes.Application.expensesIndexPerYear(new DateTime().getYear)))
   }
 
   def adminIndex = IsAuthenticated { (username, name) => implicit request =>
 
-  	Redirect(routes.Application.adminIndexPerYear(new DateTime().getYear))
+  	Future(Redirect(routes.Application.adminIndexPerYear(new DateTime().getYear)))
   }
 
   def expensesIndexPerYear(year: Int) = IsAuthenticated { (username, name)  => implicit request =>
-    Async {
       val query = BSONDocument(
         "$query" -> BSONDocument("email" -> username, "year" -> year),
         "$orderby" -> BSONDocument("year" -> -1))
@@ -82,11 +95,10 @@ object Application extends Controller with MongoController with Secured {
         Ok(views.html.expensesindex(username, expenses, year))
       }
     }
-  }
+
 
   // TODO: only the admins can view the expenses to review
   def adminIndexPerYear(year: Int) = IsAuthenticated { (username, name)  => implicit request =>
-    Async {
       val ids = Seq("submitted", "approved", "rejected")
       val queryA = BSONDocument("status" -> BSONDocument("$in" -> ids), "year" -> year)
       val query = BSONDocument(
@@ -97,18 +109,17 @@ object Application extends Controller with MongoController with Secured {
         Ok(views.html.reviewindex(username, expenses, year))
       }
     }
-  }
+
 
  // TODO: only the admins can review an expense
  def review(id: String) = IsAuthenticated { (username, name)  => implicit request =>
-    Async {
-      val objectId = new BSONObjectID(id)
+      val objectId = BSONObjectID(id)
       val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
       for {
         maybeExpense <- futureExpense
         result <- maybeExpense.map { expense =>
           import reactivemongo.api.gridfs.Implicits.DefaultReadFileReader
-          gridFS.find(BSONDocument(
+          gridFS.find[BSONDocument, JSONReadFile](BSONDocument(
              "$query" -> BSONDocument("expenses" -> expense.id.get),
              "$orderby" -> BSONDocument("uploadDate" -> 1))
             ).toList().map { files =>
@@ -120,19 +131,17 @@ object Application extends Controller with MongoController with Secured {
         }.getOrElse(Future(NotFound))
       } yield result
     }
-  }
 
 
   // TODO: Check that the user is allow to see the expenses. Only the author and the reviewer can see the expense.
   def expensesShow(id: String) = IsAuthenticated { (username, name)  => implicit request =>
-    Async {
-      val objectId = new BSONObjectID(id)
+      val objectId = BSONObjectID(id)
       val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
       for {
         maybeExpense <- futureExpense
         result <- maybeExpense.map { expense =>
           import reactivemongo.api.gridfs.Implicits.DefaultReadFileReader
-          gridFS.find(BSONDocument(
+          gridFS.find[BSONDocument, JSONReadFile](BSONDocument(
              "$query" -> BSONDocument("expenses" -> expense.id.get),
              "$orderby" -> BSONDocument("uploadDate" -> 1))
             ).toList().map { files =>
@@ -144,7 +153,6 @@ object Application extends Controller with MongoController with Secured {
         }.getOrElse(Future(NotFound))
       } yield result
     }
-  }
 
 
   val recurringForm = Form[RecurringExpense] (
@@ -159,7 +167,7 @@ object Application extends Controller with MongoController with Secured {
        "author" -> nonEmptyText
     ) {
       (id, description, amount, frequency, author) =>
-        RecurringExpense(id.map(new BSONObjectID(_)), description, amount, frequency, author)
+        RecurringExpense(id.map(BSONObjectID(_)), description, amount, frequency, author)
     } {
       expense => Some(expense.id.map(_.stringify), expense.description, expense.amount, expense.frequence, expense.author)
     }
@@ -218,7 +226,7 @@ object Application extends Controller with MongoController with Secured {
         )
         { (id, submitDate, status, reference, author, email, startDate, endDate, items) =>
           Expense(
-            id.map(new BSONObjectID(_)),
+            id.map(BSONObjectID(_)),
             new DateTime(),
             status,
             reference,
@@ -247,9 +255,9 @@ object Application extends Controller with MongoController with Secured {
     expenseForm.bindFromRequest.fold(
       errors => {
         // TODO: Format the dates and extract the items
-        BadRequest(views.html.expensesform(username, name, new DateTime(), new DateTime(), new DateTime(), errors, Seq(), Seq(), Seq()))
+        Future(BadRequest(views.html.expensesform(username, name, new DateTime(), new DateTime(), new DateTime(), errors, Seq(), Seq(), Seq())))
       },
-      expense => Async {
+      expense => {
         import models.Expense.ItemBSONWriter
         val doc = BSON.write(expense.withDateRange)
         val id = doc.getAs[BSONObjectID]("_id")
@@ -261,37 +269,36 @@ object Application extends Controller with MongoController with Secured {
 
  // TODO: only the owner can delete the expense
  def expensesDelete(id: String) = IsAuthenticated { (username, name)  => implicit request =>
-     Async {
-        val objectId = new BSONObjectID(id)
+        val objectId = BSONObjectID(id)
         val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
 
         futureExpense.flatMap { expense =>
 
-          gridFS.find(BSONDocument("expenses" -> new BSONObjectID(id))).toList().flatMap { files =>
+          gridFS.find[BSONDocument, JSONReadFile](BSONDocument("expenses" -> BSONObjectID(id))).toList().flatMap { files =>
               val deletions = files.map { file =>
                 gridFS.remove(file)
               }
               Future.sequence(deletions)
             }.flatMap { _ =>
-              expenses.remove(BSONDocument("_id" -> new BSONObjectID(id)))
+              expenses.remove(BSONDocument("_id" -> BSONObjectID(id)))
             }.map(_ => Redirect(routes.Application.expensesIndexPerYear(expense.get.startDate.getYear)).flashing("success" -> "Expense has been deleted")).recover { case _ => InternalServerError }
           }
         }
-      }
+
 
 
   // TODO: only the owner can edit the expense
   def expensesEdit(id: String) = IsAuthenticated { (username, name)  => implicit request =>
      expenseForm.bindFromRequest.fold(
-      errors => AsyncResult {
-        val objectId = new BSONObjectID(id)
+      errors => {
+        val objectId = BSONObjectID(id)
         val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
         futureExpense.map { expense =>
           BadRequest(views.html.expensesform(username, name, expense.get.submitDate, expense.get.startDate, expense.get.endDate, errors, expense.get.statusDetails, expense.get.items, expense.get.comments))
         }
       },
-      expense => AsyncResult {
-        val objectId = new BSONObjectID(id)
+      expense => {
+        val objectId = BSONObjectID(id)
         import models.Expense.ItemBSONWriter
 
         val modifier = BSONDocument(
@@ -311,15 +318,15 @@ object Application extends Controller with MongoController with Secured {
      import models.Expense.CommentBSONWriter
 
      commentForm.bindFromRequest.fold(
-      errors => Async {
-        val objectId = new BSONObjectID(id)
+      errors => {
+        val objectId = BSONObjectID(id)
         val futureExpense = expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
         futureExpense.map { expense =>
           BadRequest(views.html.expensesform(username, name, expense.get.submitDate, expense.get.startDate, expense.get.endDate, expenseForm, expense.get.statusDetails, expense.get.items, expense.get.comments))
         }
       },
-      comment => Async {
-        val objectId = new BSONObjectID(id)
+      comment => {
+        val objectId = BSONObjectID(id)
         val futureExpense = expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
 
         futureExpense.flatMap { expense =>
@@ -346,8 +353,7 @@ object Application extends Controller with MongoController with Secured {
   def deleteComment(id: String, commentId: String) = IsAuthenticated { (username, name)  => implicit request =>
     import models.Expense.CommentBSONWriter
 
-    Async {
-      val objectId = new BSONObjectID(id)
+      val objectId = BSONObjectID(id)
       val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
       futureExpense.flatMap { expense =>
         val comments = expense.get.comments.filterNot(_.id.get == commentId)
@@ -359,12 +365,11 @@ object Application extends Controller with MongoController with Secured {
         }
       }
     }
-  }
+
 
   def submitExpense(id: String) = IsAuthenticated { (username, name)  => implicit request =>
-    Async {
       val result = convertTo(id, "submitted", name, Redirect(routes.Application.expensesShow(id)).flashing("success" -> "Expense has been submitted."))
-      val objectId = new BSONObjectID(id)
+      val objectId = BSONObjectID(id)
       val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
       futureExpense.flatMap { expense =>
         sendSubmittedEmail(expense.get)
@@ -372,39 +377,35 @@ object Application extends Controller with MongoController with Secured {
       }
 
     }
-  }
+
 
   // TODO: only admin can do that
   def approveExpense(id: String) = IsAuthenticated { (username, name)  => implicit request =>
-    Async {
       var result = convertTo(id, "approved", name, Redirect(routes.Application.review(id)).flashing("success" -> "Expense has been approved."))
-      val objectId = new BSONObjectID(id)
+      val objectId = BSONObjectID(id)
       val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
       futureExpense.flatMap { expense =>
         sendApprovedEmail(expense.get)
         result
       }
     }
-  }
 
   // TODO: only admin can do that
   def  rejectExpense(id: String) = IsAuthenticated { (username, name)  => implicit request =>
-    Async {
       var result = convertTo(id, "rejected", name, Redirect(routes.Application.review(id)).flashing("success" -> "Expense has been rejected."))
-      val objectId = new BSONObjectID(id)
+      val objectId = BSONObjectID(id)
       val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
       futureExpense.flatMap { expense =>
         sendRejectedEmail(expense.get)
         result
       }
     }
-  }
 
   // This should be a private function that is called by specialized function
   private def convertTo(id: String, status: String, name: String, action: Result): Future[Result] = {
     import models.Expense.StatusDetailsWriter
 
-    val objectId = new BSONObjectID(id)
+    val objectId = BSONObjectID(id)
     val futureExpense = expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
     futureExpense.flatMap { expense =>
       val statusDetails = expense.get.statusDetails :+ StatusDetails(new DateTime(), name, status)
@@ -419,7 +420,6 @@ object Application extends Controller with MongoController with Secured {
   }
 
  def expensesNewForm = IsAuthenticated { (username, name)  => implicit request =>
-    Async {
       // Do we need to include a monthly recurring expense?
       val queryRecurringMonthly = BSONDocument(
         "$query" -> BSONDocument("author" -> username, "frequence" -> "Every month"))
@@ -452,31 +452,30 @@ object Application extends Controller with MongoController with Secured {
          Ok(views.html.expensesnew(username, name, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.items, expense.comments))
       }
    }
-  }
+
 
   def recurringShow(id: String) = IsAuthenticated { (username, name)  => implicit request =>
-    Async {
-      val objectId = new BSONObjectID(id)
+      val objectId = BSONObjectID(id)
       val futureExpense = recurringExpenses.find(BSONDocument("_id" -> objectId)).one[RecurringExpense]
 
       futureExpense.map { expense =>
           Ok(views.html.recurringform(username, name, recurringForm.fill(expense.get)))
       }
     }
-  }
+
 
   // TODO: only the owner can edit the expense
  def recurringEdit(id: String) = IsAuthenticated { (username, name)  => implicit request =>
      recurringForm.bindFromRequest.fold(
-      errors => AsyncResult {
-        val objectId = new BSONObjectID(id)
+      errors => {
+        val objectId = BSONObjectID(id)
         val futureExpense= recurringExpenses.find(BSONDocument("_id" -> objectId)).one[RecurringExpense]
         futureExpense.map { expense =>
           BadRequest(views.html.recurringnew(username, name, errors))
         }
       },
-      expense => AsyncResult {
-        val objectId = new BSONObjectID(id)
+      expense => {
+        val objectId = BSONObjectID(id)
         import models.RecurringExpense.RecurringExpenseBSONWriter
 
         val modifier = BSONDocument(
@@ -493,16 +492,16 @@ object Application extends Controller with MongoController with Secured {
 
   def recurringNewForm = IsAuthenticated { (username, name)  => implicit request =>
 
-     Ok(views.html.recurringnew(username, name, recurringForm))
+     Future(Ok(views.html.recurringnew(username, name, recurringForm)))
   }
 
   def recurringNew = IsAuthenticated { (username, name)  => implicit request =>
 
      recurringForm.bindFromRequest.fold(
       errors => {
-        BadRequest(views.html.recurringnew(username, name, errors))
+        Future(BadRequest(views.html.recurringnew(username, name, errors)))
       },
-      expense => Async {
+      expense => {
         import models.Expense.ItemBSONWriter
         val doc = BSON.write(expense)
         val id = doc.getAs[BSONObjectID]("_id")
@@ -513,7 +512,6 @@ object Application extends Controller with MongoController with Secured {
   }
 
   def recurringIndex = IsAuthenticated { (username, name)  => implicit request =>
-     Async {
       // TODO: Sort per date and filter per year
       val query = BSONDocument(
         "$query" -> BSONDocument("author" -> username),
@@ -524,12 +522,11 @@ object Application extends Controller with MongoController with Secured {
         Ok(views.html.recurringindex(username, expenses))
       }
     }
-  }
+
 
   // TODO: only the owner can delete the expense
   def recurringDelete(id: String) = IsAuthenticated { (username, name)  => implicit request =>
-     Async {
-        val objectId = new BSONObjectID(id)
+        val objectId = BSONObjectID(id)
         val futureExpense = recurringExpenses.find(BSONDocument("_id" -> objectId)).one[RecurringExpense]
 
         futureExpense.flatMap { expense =>
@@ -538,86 +535,87 @@ object Application extends Controller with MongoController with Secured {
           }
         }
     }
-  }
+
 
   // -- Emails
 
   private def sendCommentEmailToAdmins(username: String, email: String, expense: Expense, comment: Comment) = { implicit request: RequestHeader =>
-    import com.typesafe.plugin._
-    import play.api.Play.current
-    val mail = use[MailerPlugin].email
+
+    val mail = new Email()
     mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") from " + expense.author )
-    mail.setRecipient(Play.configuration.getString("email.recipient").get.split(",").toList:_*)
+    Play.configuration.getString("email.recipient").get.split(",").map { x =>
+      mail.addTo(x)
+    }
     mail.setFrom(expense.author + " <" + expense.email + ">")
     val template = views.html.emails.notifycommenttoadmin.render(expense, comment, request)
 
     // sends html
-    mail.sendHtml(template.body)
+    mail.setBodyHtml(template.body)
+    MailerPlugin.send(mail)
   }
 
 
   private def sendCommentEmailToUser(username: String, email: String, expense: Expense, comment: Comment) = { implicit request: RequestHeader =>
-    import com.typesafe.plugin._
-    import play.api.Play.current
-    val mail = use[MailerPlugin].email
+    val mail = new Email()
     mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ")")
-    mail.setRecipient(expense.author + " <" + expense.email + ">")
+    mail.addTo(expense.author + " <" + expense.email + ">")
     mail.setFrom(username + "<" + email + ">")
     val template = views.html.emails.notifycommenttouser.render(username, expense, comment, request)
 
     // sends html
-    mail.sendHtml(template.body)
+    mail.setBodyHtml(template.body)
+    MailerPlugin.send(mail)
   }
 
 
   private def sendRejectedEmail(expense: Expense) = { implicit request: RequestHeader =>
-    import com.typesafe.plugin._
-    import play.api.Play.current
-    val mail = use[MailerPlugin].email
+    val mail = new Email()
     val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
     mail.setSubject("You expenses expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") have been rejected.")
     mail.setFrom(Play.configuration.getString("email.from").get)
-    mail.setRecipient(expense.author + " <" + expense.email + ">")
+    mail.addTo(expense.author + " <" + expense.email + ">")
     val template = views.html.emails.notifyrefusedexpense.render(expense, request)
 
     // sends html
-    mail.sendHtml(template.body)
+    mail.setBodyHtml(template.body)
+    MailerPlugin.send(mail)
   }
 
   private def sendSubmittedEmail(expense: Expense) = { implicit request: RequestHeader =>
-    import com.typesafe.plugin._
-    import play.api.Play.current
-    val mail = use[MailerPlugin].email
+
+    val mail = new Email()
     val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
     mail.setSubject(expense.author + " submitted an expense. Please review it.")
     mail.setFrom(expense.author + " <" + expense.email + ">")
-    mail.setRecipient(Play.configuration.getString("email.recipient").get.split(",").toList:_*)
+    Play.configuration.getString("email.recipient").get.split(",").map { x =>
+      mail.addTo(x)
+    }
     val template = views.html.emails.notifynewexpense.render(expense, request)
 
     // sends html
-    mail.sendHtml(template.body)
+    mail.setBodyHtml(template.body)
+    MailerPlugin.send(mail)
   }
 
 
   private def sendApprovedEmail(expense: Expense) = { implicit request: RequestHeader =>
-    import com.typesafe.plugin._
-    import play.api.Play.current
-    val mail = use[MailerPlugin].email
+    val mail = new Email()
     val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
     mail.setSubject("You expenses expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") have been approved.")
     mail.setFrom(Play.configuration.getString("email.from").get)
-    mail.setRecipient(expense.author + " <" + expense.email + ">")
+    mail.addTo(expense.author + " <" + expense.email + ">")
     val template = views.html.emails.notifyapprovedexpense.render(expense, request)
 
     // sends html
-    mail.sendHtml(template.body)
+    mail.setBodyHtml(template.body)
+    MailerPlugin.send(mail)
   }
 
 
   // -- Attachments
 
   // TODO: This should be secured ie user have to be registered
-  def saveAttachments(id: String) = Action(gridFSBodyParser(gridFS))  {  implicit request =>
+  def saveAttachments(id: String) = Action.async(gridFSBodyParser(gridFS))  {  implicit request =>
     val futureFile = request.body.files.head.ref
     val futureUpdate = for {
       file <- futureFile
@@ -628,29 +626,26 @@ object Application extends Controller with MongoController with Secured {
       }
     } yield updateResult
 
-    Async {
       futureUpdate.map {
         case _ => Ok
       }.recover {
         case e => InternalServerError(e.getMessage())
       }
     }
-  }
+
 
   // TODO: only the owner or admin can save the file
   def getAttachment(id: String) = IsAuthenticated { (username, name)  => request =>
-    Async {
-      val file = gridFS.find(BSONDocument("_id" -> new BSONObjectID(id)))
-      serve(gridFS, file)
+      val file = gridFS.find[BSONDocument, JSONReadFile](BSONDocument("_id" -> BSONObjectID(id)))
+      serve[JsString, JSONReadFile](gridFS)(file)
     }
-  }
+
 
   // TODO: only the owner can delete the file
   def deleteAttachment(id: String) = IsAuthenticated { (username, name)  => implicit request =>
-    Async {
-      gridFS.remove(new BSONObjectID(id)).map(_ => Ok).recover { case _ => InternalServerError }
-    }
+      gridFS.remove(Json toJson id).map(_ => Ok).recover { case _ => InternalServerError }
   }
+
 
 
   // -- Authentication
@@ -673,9 +668,8 @@ object Application extends Controller with MongoController with Secured {
        }
      }
 
-     def authenticate(code: String, id_token: String, access_token: String) = Action { implicit request =>
+     def authenticate(code: String, id_token: String, access_token: String) = Action.async { implicit request =>
 
-     Async {
        val response = Authenticate.authenticateToken(code, id_token, access_token)
 
        response.map {
@@ -683,7 +677,7 @@ object Application extends Controller with MongoController with Secured {
            case Right(message) => Redirect(routes.Application.login).withNewSession.flashing("error" -> message.toString())
          }
        }
-   }
+
 
 
  /**
@@ -732,9 +726,9 @@ trait Secured {
   /**
  * Action for authenticated users.
  */
- def IsAuthenticated(f: => (String, String) => Request[AnyContent] => Result) =
+ def IsAuthenticated(f: => (String, String) => Request[AnyContent] => Future[Result]) =
    Security.Authenticated(username, onUnauthorized) { case (username, name) =>
-     Action(request => f(username, name)(request))
+     Action.async(request => f(username, name)(request))
  }
 
 

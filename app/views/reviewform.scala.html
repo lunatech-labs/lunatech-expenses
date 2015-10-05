@@ -1,16 +1,16 @@
-@(username: String, name: String, submitDate: org.joda.time.DateTime, startDate: org.joda.time.DateTime, endDate: org.joda.time.DateTime, expense: Form[Expense], statusDetails: Seq[StatusDetails], items: Seq[Item], comments: Seq[Comment],files: Option[List[(String, reactivemongo.api.gridfs.ReadFile[reactivemongo.bson.BSONValue])]] = None)(implicit flash: play.api.mvc.Flash)
+@(username: String, name: String, submitDate: org.joda.time.DateTime, startDate: org.joda.time.DateTime, endDate: org.joda.time.DateTime, expense: Form[Expense], statusDetails: Seq[StatusDetails], items: Seq[Item], comments: Seq[Comment],files: Option[List[(String, reactivemongo.api.gridfs.ReadFile[play.modules.reactivemongo.json.JSONSerializationPack.type, play.api.libs.json.JsString])]] = None)(implicit flash: play.api.mvc.Flash)
 @import utils._
 @import org.joda.time.DateTime
 @main("") {
 @menu(username, "review")
-  
+
  <div id="Wrapper">
     <div id="Container">
 	    <div class="left">
 	        <div class="col">
 	            <div class="chat-wrapper">
 
-	            <div class="pull-right"><h3>@(expense("status").value.getOrElse("") match { 
+	            <div class="pull-right"><h3>@(expense("status").value.getOrElse("") match {
 	            	case "draft" => <span class="label label-default">draft</span>
 	            	case "submitted" => <span class="label label-info">submitted</span>
 	            	case "approved" => <span class="label label-success">approved</span>
@@ -20,7 +20,7 @@
 					<h5>@(statusDetails.filter(details => details.status.equals("approved") || details.status.equals("rejected")).lastOption.map(status => {
 						"by " + status.name + " (" + status.date.toString("dd MMM. yyyy") + ")"
 					}))</h5></div>
-		           
+
 	            	<h3 style="font-variant: small-caps">Expenses from @expense("author").value</h3>
 					<h5 class="timeline"><span id="submitted">Submitted on @Time.ordinal(submitDate) @submitDate.toString("MMM. yyyy")</span></h5>
 	            	@flash.get("success").map { message =>
@@ -43,7 +43,7 @@
 	            		<input id="endDate" type="hidden" value="@expense("endDate").value" name="endDate"/>
 	            		<input type="hidden" value="@expense("author").value" name="author"/>
 	            		<input type="hidden" value="@expense("status").value" name="status"/>
-	            	
+
 	            		<h4 class="timeline"><span id="start">@Time.ordinal(startDate) @startDate.toString("MMM. yyyy") </span>- <span id="end">@Time.ordinal(endDate) @endDate.toString("MMM. yyyy") </span></h4>
 		            	<div style="margin: 50px 0 20px">
 		            			<h3>@expense("reference").value</h3>
@@ -79,7 +79,7 @@
 					        </tbody>
 					      </table>
 
-					      
+
 	                  </form>
 
 	                  <h3 class="comment"><span id="number_comment">@(comments.size)</span> Comments</h3>
@@ -92,21 +92,21 @@
 								  <div class="comment-body">
 								   @comment.content
 								  </div>
-							  <!-- TODO: limit the delete to the user that wrote the comment and add reply to the last comment only -->	
+							  <!-- TODO: limit the delete to the user that wrote the comment and add reply to the last comment only -->
 							  <div class="action" style="font-size: 11px; margin-right:20px; text-align: right">@if((index + 1) == comments.size){<a onclick="$('#reply').slideToggle();">Reply</a> • }@if(username == comment.email){<a href="@routes.Application.deleteComment(expense("id").value.getOrElse(""), comment.id.getOrElse(""))" onclick="$(this).parent().parent().hide('slow', function() {$(this).remove(); })">Delete</a>}</div>
-					
+
 	 					</div>
 	 				    }
 	 					@if(comments.isEmpty) {
 	 					 <div class="action" style="font-size: 11px; margin-right:20px; text-align: right"><a onclick="$('#reply').slideToggle();">Add Comment</a></div>
-					
+
 	 					}
 						 <form id="reply" style="display:none" action="@routes.Application.addComment(expense("id").value.getOrElse(""))" method="POST">
 				     		<div class="form-group">
 						    	<div class="">
 						    		<input type="hidden" name="author" value="@name"/>
 						    		<input type="hidden" name="email" value="@username"/>
-						     		
+
 						     		<img src="http://www.gravatar.com/avatar/@utils.Time.md5(username)?d=mm&s=36" /><textarea name="content" class="comment" rows="4" placeholder="Write a comment"></textarea>
 						    	</div>
 						  	</div>
@@ -114,7 +114,7 @@
 						  		<button class="btn btn-primary" role="button">Save</button> Or <a  style="margin-right: 20px" onclick="$('#reply').slideToggle();">Cancel</a>
 						  	</div>
 						</form>
-					</div>	 
+					</div>
 	            </div>
 	        </div>
 	    </div>
@@ -126,7 +126,7 @@
 		        <h4 class="modal-title">Not yet implemented</h4>
 		      </div>
 		      <div class="modal-body">
-		        <p>Fee free to contribute to the project ;) 
+		        <p>Fee free to contribute to the project ;)
 		        </p>
 		      </div>
 		      <div class="modal-footer">
@@ -164,13 +164,13 @@
             	<li><i class="fa fa-print"></i> <a href="javascript:window.print()">Print expenses form</a></li>
             	<li><i class="fa fa-check-square-o"></i> <a href="@routes.Application.approveExpense(expense("id").value.getOrElse(""))">Approve this expense</a></li>
             	<li><i class="fa fa-check-square-o"></i> <a href="@routes.Application.rejectExpense(expense("id").value.getOrElse(""))">Reject this expense</a></li>
-            	
+
               </ul>
             </div>
             <div>
               <h3><a href="">Receipts</a></h3>
-             
-		      
+
+
               <ul id="receipts" class="related-actions files ">
 			    @if(files.isDefined) {
 			      @files.get.map { file =>
@@ -178,10 +178,10 @@
 			      }
 			    }
      </ul>
-              
+
             </div>
         </div>
-               
+
 	</div>
 </div>
 
