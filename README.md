@@ -1,7 +1,7 @@
 This is the employee expense form application
 =====================================
 
-The application uses Mongo as backend and is a work in progress. It also uses Google app for authentication. It is currently deployed on CloudBees.
+The application uses Mongo as backend and is a work in progress. It also uses Google app for authentication. It is currently deployed on Heroku.
 
 To get started you need to export some environment variables:
 ```
@@ -14,4 +14,4 @@ export SENDGRID_USERNAME=...
 export SENDGRID_PASSWORD=...
 ```
 
-Please check on confluence for the exact information. And then, `play run `
+Please check on confluence for the exact information. And then, `sbt run `
