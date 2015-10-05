@@ -1,7 +1,7 @@
 This is the employee expense form application
 =====================================
 
-The application uses Mongo as backend and is a work in progress. It also uses Google app for authentication. It is currently deployed on Heroku.
+The application uses Mongo as backend via mongolabs and is a work in progress. It also uses Google app for authentication. It is currently deployed on Heroku.
 
 To get started you need to export some environment variables:
 ```
