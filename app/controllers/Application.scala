@@ -60,7 +60,7 @@ import play.libs.mailer._
 object Application extends Controller with MongoController with Secured {
 
   val GOOGLE_URL = "https://accounts.google.com/o/oauth2/auth"
-  type JSONReadFile = ReadFile[JSONSerializationPack.type, JsString]
+  type JSONReadFile = ReadFile[JSONSerializationPack.type, JsObject]
 
 
 
@@ -91,7 +91,7 @@ object Application extends Controller with MongoController with Secured {
         "$orderby" -> BSONDocument("year" -> -1))
 
       val found = expenses.find(query).cursor[Expense]
-      found.toList().map { expenses =>
+      found.collect[List]().map { expenses =>
         Ok(views.html.expensesindex(username, expenses, year))
       }
     }
@@ -105,7 +105,7 @@ object Application extends Controller with MongoController with Secured {
         "$query" -> queryA,
         "$orderby" -> BSONDocument("submit_date" -> -1, "_id" -> -1))
       val found = expenses.find(query).cursor[Expense]
-      found.toList().map { expenses =>
+      found.collect[List]().map { expenses =>
         Ok(views.html.reviewindex(username, expenses, year))
       }
     }
@@ -118,14 +118,13 @@ object Application extends Controller with MongoController with Secured {
       for {
         maybeExpense <- futureExpense
         result <- maybeExpense.map { expense =>
-          import reactivemongo.api.gridfs.Implicits.DefaultReadFileReader
-          gridFS.find[BSONDocument, JSONReadFile](BSONDocument(
-             "$query" -> BSONDocument("expenses" -> expense.id.get),
-             "$orderby" -> BSONDocument("uploadDate" -> 1))
-            ).toList().map { files =>
-            val filesWithId = files.map { file =>
-              file.id.asInstanceOf[BSONObjectID].stringify -> file
-            }
+          gridFS.find[JsObject, JSONReadFile](Json.obj(
+             "expenses" -> expense.id.get)
+             //"$orderby" -> BSONDocument("uploadDate" -> 1))
+           ).collect[List]().map { files =>
+             val filesWithId = files.map { file =>
+               (file.id \ "$oid").as[String] -> file
+             }
             Ok(views.html.reviewform(username, name, expense.submitDate, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.statusDetails, expense.items, expense.comments, Some(filesWithId)))
           }
         }.getOrElse(Future(NotFound))
@@ -140,13 +139,12 @@ object Application extends Controller with MongoController with Secured {
       for {
         maybeExpense <- futureExpense
         result <- maybeExpense.map { expense =>
-          import reactivemongo.api.gridfs.Implicits.DefaultReadFileReader
           gridFS.find[BSONDocument, JSONReadFile](BSONDocument(
              "$query" -> BSONDocument("expenses" -> expense.id.get),
              "$orderby" -> BSONDocument("uploadDate" -> 1))
-            ).toList().map { files =>
+           ).collect[List]().map { files =>
             val filesWithId = files.map { file =>
-              file.id.asInstanceOf[BSONObjectID].stringify -> file
+              (file.id \ "$oid").as[String] -> file
             }
             Ok(views.html.expensesform(username, name, expense.submitDate, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.statusDetails, expense.items, expense.comments, Some(filesWithId)))
           }
@@ -274,7 +272,7 @@ object Application extends Controller with MongoController with Secured {
 
         futureExpense.flatMap { expense =>
 
-          gridFS.find[BSONDocument, JSONReadFile](BSONDocument("expenses" -> BSONObjectID(id))).toList().flatMap { files =>
+          gridFS.find[BSONDocument, JSONReadFile](BSONDocument("expenses" -> BSONObjectID(id))).collect[List]().flatMap { files =>
               val deletions = files.map { file =>
                 gridFS.remove(file)
               }
@@ -428,7 +426,7 @@ object Application extends Controller with MongoController with Secured {
         "$query" -> BSONDocument("email" -> username, "year" -> new DateTime().getYear),
         "$orderby" -> BSONDocument("year" -> -1))
 
-      for { recurring <- recurringExpenses.find(queryRecurringMonthly).cursor[RecurringExpense].toList()
+      for { recurring <- recurringExpenses.find(queryRecurringMonthly).cursor[RecurringExpense].collect[List]()
             previous <- expenses.find(query).one[Expense]
         } yield {
           // Add the recurring items
@@ -518,7 +516,7 @@ object Application extends Controller with MongoController with Secured {
         "$orderby" -> BSONDocument("desciption" -> -1))
 
       val found = recurringExpenses.find(query).cursor[RecurringExpense]
-      found.toList().map { expenses =>
+      found.collect[List]().map { expenses =>
         Ok(views.html.recurringindex(username, expenses))
       }
     }
@@ -637,7 +635,7 @@ object Application extends Controller with MongoController with Secured {
   // TODO: only the owner or admin can save the file
   def getAttachment(id: String) = IsAuthenticated { (username, name)  => request =>
       val file = gridFS.find[BSONDocument, JSONReadFile](BSONDocument("_id" -> BSONObjectID(id)))
-      serve[JsString, JSONReadFile](gridFS)(file)
+      serve[JsObject, JSONReadFile](gridFS)(file)
     }
 
 
