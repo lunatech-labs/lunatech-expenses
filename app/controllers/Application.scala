@@ -543,6 +543,7 @@ object Application extends Controller with MongoController with Secured {
     val mail = new Email()
     mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") from " + expense.author )
     Play.configuration.getString("email.recipient").get.split(",").map { x =>
+      println("send email to " + x)
       mail.addTo(x)
     }
     mail.setFrom(expense.author + " <" + expense.email + ">")
@@ -550,6 +551,7 @@ object Application extends Controller with MongoController with Secured {
 
     // sends html
     mail.setBodyHtml(template.body)
+    println("send email  " + mail)
     MailerPlugin.send(mail)
   }
 
