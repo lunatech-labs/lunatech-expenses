@@ -12,7 +12,7 @@ libraryDependencies ++= Seq(
   jdbc,
   anorm,
   cache,
-  "org.reactivemongo" % "play2-reactivemongo_2.10" % "0.11.7.play23",
+  "org.reactivemongo" %% "play2-reactivemongo" % "0.11.7.play23",
   "org.ocpsoft.prettytime" % "prettytime" % "3.2.1.Final",
   "com.typesafe.play" %% "play-mailer" % "2.4.1",
   "com.google.gdata" % "core" % "1.47.1",

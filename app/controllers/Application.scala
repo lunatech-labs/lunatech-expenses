@@ -55,14 +55,17 @@ import play.api.Play.current
 
 import play.libs.mailer._
 
+import reactivemongo.bson.BSONDateTime
+import play.api.libs.json.{ JsError, JsResult, JsSuccess }
+import play.api.libs.functional.syntax._
+import play.modules.reactivemongo.json.BSONFormats, BSONFormats.{ BSONDateTimeFormat, BSONDocumentFormat }
+
 
 
 object Application extends Controller with MongoController with Secured {
 
   val GOOGLE_URL = "https://accounts.google.com/o/oauth2/auth"
-  type JSONReadFile = ReadFile[JSONSerializationPack.type, JsObject]
-
-
+  type JSONReadFile = ReadFile[JSONSerializationPack.type, JsString]
 
   def expenses = db.collection[BSONCollection]("expenses")
   def recurringExpenses = db.collection[BSONCollection]("recurringexpenses")
@@ -119,12 +122,11 @@ object Application extends Controller with MongoController with Secured {
         maybeExpense <- futureExpense
         result <- maybeExpense.map { expense =>
           gridFS.find[JsObject, JSONReadFile](Json.obj(
-             "expenses" -> expense.id.get)
-             //"$orderby" -> BSONDocument("uploadDate" -> 1))
+             "expenses" -> id)
            ).collect[List]().map { files =>
-             val filesWithId = files.map { file =>
-               (file.id \ "$oid").as[String] -> file
-             }
+              val filesWithId = files.map { file =>
+              file.id.value -> file
+            }
             Ok(views.html.reviewform(username, name, expense.submitDate, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.statusDetails, expense.items, expense.comments, Some(filesWithId)))
           }
         }.getOrElse(Future(NotFound))
@@ -139,12 +141,11 @@ object Application extends Controller with MongoController with Secured {
       for {
         maybeExpense <- futureExpense
         result <- maybeExpense.map { expense =>
-          gridFS.find[BSONDocument, JSONReadFile](BSONDocument(
-             "$query" -> BSONDocument("expenses" -> expense.id.get),
-             "$orderby" -> BSONDocument("uploadDate" -> 1))
+          gridFS.find[JsObject, JSONReadFile](Json.obj(
+             "expenses" -> id)
            ).collect[List]().map { files =>
-            val filesWithId = files.map { file =>
-              (file.id \ "$oid").as[String] -> file
+              val filesWithId = files.map { file =>
+              file.id.value -> file
             }
             Ok(views.html.expensesform(username, name, expense.submitDate, expense.startDate, expense.endDate, expenseForm.fill(expense), expense.statusDetails, expense.items, expense.comments, Some(filesWithId)))
           }
@@ -272,7 +273,7 @@ object Application extends Controller with MongoController with Secured {
 
         futureExpense.flatMap { expense =>
 
-          gridFS.find[BSONDocument, JSONReadFile](BSONDocument("expenses" -> BSONObjectID(id))).collect[List]().flatMap { files =>
+          gridFS.find[JsObject, JSONReadFile](Json.obj("expenses" -> id)).collect[List]().flatMap { files =>
               val deletions = files.map { file =>
                 gridFS.remove(file)
               }
@@ -619,8 +620,8 @@ object Application extends Controller with MongoController with Secured {
       file <- futureFile
       updateResult <- {
         gridFS.files.update(
-          BSONDocument("_id" -> file.id),
-          BSONDocument("$set" -> BSONDocument("expenses" -> BSONObjectID(id))))
+          Json.obj("_id" -> file.id),
+          Json.obj("$set" -> Json.obj("expenses" -> id)))
       }
     } yield updateResult
 
@@ -634,8 +635,9 @@ object Application extends Controller with MongoController with Secured {
 
   // TODO: only the owner or admin can save the file
   def getAttachment(id: String) = IsAuthenticated { (username, name)  => request =>
-      val file = gridFS.find[BSONDocument, JSONReadFile](BSONDocument("_id" -> BSONObjectID(id)))
-      serve[JsObject, JSONReadFile](gridFS)(file)
+      //val file = gridFS.find[BSONDocument, JSONReadFile](BSONDocument("_id" -> BSONObjectID(id)))
+      val file = gridFS.find[JsObject, JSONReadFile](Json.obj("_id" -> id))
+      serve[JsString, JSONReadFile](gridFS)(file)
     }
 
 
@@ -647,10 +649,6 @@ object Application extends Controller with MongoController with Secured {
 
 
   // -- Authentication
-
-  /**
-   * Login page.
-   */
 
      /**
       * Login page.

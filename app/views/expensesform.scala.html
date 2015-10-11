@@ -47,7 +47,7 @@
 	            		<input type="hidden" value="@expense("status").value" name="status"/>
 
 		            	<div style="margin: 50px 0 20px">
-		            		@if(expense("status").value.getOrElse("")=="draft"){
+		            		@if(expense("status").value.getOrElse("")=="draft" || expense("status").value.getOrElse("") == "refused"){
 		            		<input class="form-control" placeholder="Optional: reference" name="reference" value="@expense("reference").value"><span class="error">@expense.error("reference").map(x => Messages(x.message))</span>
 		            		} else {
 		            			<h3>@expense("reference").value</h3>
@@ -72,7 +72,7 @@
 					            <td>@item.name</td>
 					            <td class="amount right">€ @item.amount</td>
 					            <td>@item.note</td>
-					            <td class"action">@if(expense("status").value.getOrElse("") == "draft") {
+					            <td class"action">@if(expense("status").value.getOrElse("") == "draft" || expense("status").value.getOrElse("") == "refused") {
 					          <a class="delete" onclick="$(this).parent().parent().hide('slow', function() {$(this).remove(); updateTotal();reorder();}); "><i class="fa fa-trash-o"></i> Delete</a>}
 					           	@** Input fields that we are sending to the controllers that represents our list of items **@
 					        	<textarea name="items[@index].note" style="display:none">@item.note</textarea>
@@ -173,7 +173,7 @@
 
 
 					         </script>
-					         @if(expense("status").value.getOrElse("") == "draft") {
+					         @if(expense("status").value.getOrElse("") == "draft" || expense("status").value.getOrElse("") == "refused") {
 					          <tr id="addItem" style="background-color: #ffffdf">
 					            <td class=""></td>
 					            <!-- TODO: Add date mask input? -->
@@ -199,7 +199,7 @@
 
 					       <script>
 		                    var date = $('#date').datepicker({format: 'dd/mm/yyyy'});
-   							@if(expense("status").value.getOrElse("") == "draft") {
+   							@if(expense("status").value.getOrElse("") == "draft" || expense("status").value.getOrElse("") == "refused") {
 
 		                   	$('#editStart,#start').on('click', function(evt) {
 		                   		evt.preventDefault()
@@ -315,7 +315,7 @@
               <h3><a href="">Related actions</a></h3>
               <ul class="related-actions">
             	<li><i class="fa fa-print"></i> <a onclick="javascript:window.print()">Print expenses form</a></li>
-            	@if(expense("status").value.getOrElse("") == "draft") {
+            	@if(expense("status").value.getOrElse("") == "draft" || expense("status").value.getOrElse("") == "refused") {
             	<li><i class="fa fa-check-square-o"></i> <a href="@routes.Application.submitExpense(expense("id").value.getOrElse(""))">Submit your expense</a></li>
             	<li><i class="fa fa-trash-o"></i> <a data-toggle="modal" data-target="#deleteModal" >Delete</a></li>
             	}
