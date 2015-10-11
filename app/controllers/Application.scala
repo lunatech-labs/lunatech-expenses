@@ -335,7 +335,9 @@ object Application extends Controller with MongoController with Secured {
               "comments" -> comments))
           expenses.update(BSONDocument("_id" -> objectId), modifier).map { _ =>
             // Send a comment to the right user
-            Logger.info("comment added")
+            Logger.info("comment added " + comment.author)
+
+            Logger.info("comment added " + expense.get.author)
             if (comment.author == expense.get.author) {
               // Send to admin
               sendCommentEmailToAdmins(comment.author, comment.email, expense.get, comment)
