@@ -546,7 +546,7 @@ object Application extends Controller with MongoController with Secured {
       println("send email to " + x)
       mail.addTo(x)
     }
-    mail.setFrom(expense.author + " <" + expense.email + ">")
+    mail.setFrom(expense.email)
     val template = views.html.emails.notifycommenttoadmin.render(expense, comment, request)
 
     // sends html
@@ -559,8 +559,9 @@ object Application extends Controller with MongoController with Secured {
   private def sendCommentEmailToUser(username: String, email: String, expense: Expense, comment: Comment) = { implicit request: RequestHeader =>
     val mail = new Email()
     mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ")")
-    mail.addTo(expense.author + " <" + expense.email + ">")
-    mail.setFrom(username + "<" + email + ">")
+    mail.addTo(expense.email)
+    println("send email to " + expense.email)
+    mail.setFrom(email)
     val template = views.html.emails.notifycommenttouser.render(username, expense, comment, request)
 
     // sends html
@@ -574,7 +575,7 @@ object Application extends Controller with MongoController with Secured {
     val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
     mail.setSubject("You expenses expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") have been rejected.")
     mail.setFrom(Play.configuration.getString("email.from").get)
-    mail.addTo(expense.author + " <" + expense.email + ">")
+    mail.addTo(expense.email)
     val template = views.html.emails.notifyrefusedexpense.render(expense, request)
 
     // sends html
@@ -587,7 +588,7 @@ object Application extends Controller with MongoController with Secured {
     val mail = new Email()
     val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
     mail.setSubject(expense.author + " submitted an expense. Please review it.")
-    mail.setFrom(expense.author + " <" + expense.email + ">")
+    mail.setFrom(expense.email)
     Play.configuration.getString("email.recipient").get.split(",").map { x =>
       mail.addTo(x)
     }
@@ -604,7 +605,7 @@ object Application extends Controller with MongoController with Secured {
     val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
     mail.setSubject("You expenses expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") have been approved.")
     mail.setFrom(Play.configuration.getString("email.from").get)
-    mail.addTo(expense.author + " <" + expense.email + ">")
+    mail.addTo(expense.email)
     val template = views.html.emails.notifyapprovedexpense.render(expense, request)
 
     // sends html
