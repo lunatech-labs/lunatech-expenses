@@ -539,78 +539,96 @@ object Application extends Controller with MongoController with Secured {
   // -- Emails
 
   private def sendCommentEmailToAdmins(username: String, email: String, expense: Expense, comment: Comment) = { implicit request: RequestHeader =>
+    try {
+      val mail = new Email()
+      mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") from " + expense.author )
+      Play.configuration.getString("email.recipient").get.split(",").map { x =>
+        println("send email to " + x)
+        mail.addTo(x)
+      }
+      mail.setFrom(expense.email)
+      val template = views.html.emails.notifycommenttoadmin.render(expense, comment, request)
 
-    val mail = new Email()
-    mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") from " + expense.author )
-    Play.configuration.getString("email.recipient").get.split(",").map { x =>
-      println("send email to " + x)
-      mail.addTo(x)
+      // sends html
+      mail.setBodyHtml(template.body)
+      println("send email  " + mail)
+      MailerPlugin.send(mail)
+    } catch {
+      case e:Throwable => Logger.error("Error sending email " + e)
     }
-    mail.setFrom(expense.email)
-    val template = views.html.emails.notifycommenttoadmin.render(expense, comment, request)
-
-    // sends html
-    mail.setBodyHtml(template.body)
-    println("send email  " + mail)
-    MailerPlugin.send(mail)
   }
 
 
   private def sendCommentEmailToUser(username: String, email: String, expense: Expense, comment: Comment) = { implicit request: RequestHeader =>
-    val mail = new Email()
-    mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ")")
-    mail.addTo(expense.email)
-    println("send email to " + expense.email)
-    mail.setFrom(email)
-    val template = views.html.emails.notifycommenttouser.render(username, expense, comment, request)
+    try {
+      val mail = new Email()
+      mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ")")
+      mail.addTo(expense.email)
+      println("send email to " + expense.email)
+      mail.setFrom(email)
+      val template = views.html.emails.notifycommenttouser.render(username, expense, comment, request)
 
-    // sends html
-    mail.setBodyHtml(template.body)
-    MailerPlugin.send(mail)
+      // sends html
+      mail.setBodyHtml(template.body)
+      MailerPlugin.send(mail)
+    } catch {
+      case e:Throwable => Logger.error("Error sending email " + e)
+    }
   }
 
 
   private def sendRejectedEmail(expense: Expense) = { implicit request: RequestHeader =>
-    val mail = new Email()
-    val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
-    mail.setSubject("You expenses expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") have been rejected.")
-    mail.setFrom(Play.configuration.getString("email.from").get)
-    mail.addTo(expense.email)
-    val template = views.html.emails.notifyrefusedexpense.render(expense, request)
+    try {
+      val mail = new Email()
+      val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
+      mail.setSubject("You expenses expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") have been rejected.")
+      mail.setFrom(Play.configuration.getString("email.from").get)
+      mail.addTo(expense.email)
+      val template = views.html.emails.notifyrefusedexpense.render(expense, request)
 
-    // sends html
-    mail.setBodyHtml(template.body)
-    MailerPlugin.send(mail)
+      // sends html
+      mail.setBodyHtml(template.body)
+      MailerPlugin.send(mail)
+    } catch {
+      case e:Throwable => Logger.error("Error sending email " + e)
+    }
   }
 
   private def sendSubmittedEmail(expense: Expense) = { implicit request: RequestHeader =>
+    try {
+      val mail = new Email()
+      val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
+      mail.setSubject(expense.author + " submitted an expense. Please review it.")
+      mail.setFrom(expense.email)
+      Play.configuration.getString("email.recipient").get.split(",").map { x =>
+        mail.addTo(x)
+      }
+      val template = views.html.emails.notifynewexpense.render(expense, request)
 
-    val mail = new Email()
-    val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
-    mail.setSubject(expense.author + " submitted an expense. Please review it.")
-    mail.setFrom(expense.email)
-    Play.configuration.getString("email.recipient").get.split(",").map { x =>
-      mail.addTo(x)
+      // sends html
+      mail.setBodyHtml(template.body)
+      MailerPlugin.send(mail)
+    } catch {
+      case e:Throwable => Logger.error("Error sending email " + e)
     }
-    val template = views.html.emails.notifynewexpense.render(expense, request)
-
-    // sends html
-    mail.setBodyHtml(template.body)
-    MailerPlugin.send(mail)
   }
 
 
   private def sendApprovedEmail(expense: Expense) = { implicit request: RequestHeader =>
-    val mail = new Email()
-    val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
-    mail.setSubject("You expenses expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") have been approved.")
-    mail.setFrom(Play.configuration.getString("email.from").get)
-    mail.addTo(expense.email)
-    val template = views.html.emails.notifyapprovedexpense.render(expense, request)
+    try {
+      val mail = new Email()
+      val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
+      mail.setSubject("You expenses expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") have been approved.")
+      mail.setFrom(Play.configuration.getString("email.from").get)
+      mail.addTo(expense.email)
+      val template = views.html.emails.notifyapprovedexpense.render(expense, request)
 
-    // sends html
-    mail.setBodyHtml(template.body)
-    MailerPlugin.send(mail)
+      // sends html
+      mail.setBodyHtml(template.body)
+      MailerPlugin.send(mail)
+    } catch {
+      case e:Throwable => Logger.error("Error sending email " + e)
+    }
   }
 
 
