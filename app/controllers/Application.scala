@@ -335,14 +335,11 @@ object Application extends Controller with MongoController with Secured {
               "comments" -> comments))
           expenses.update(BSONDocument("_id" -> objectId), modifier).map { _ =>
             // Send a comment to the right user
-            Logger.info("comment added " + comment.author)
-
-            Logger.info("comment added " + expense.get.author)
             if (comment.author == expense.get.author) {
               // Send to admin
-              sendCommentEmailToAdmins(comment.author, comment.email, expense.get, comment)
+              sendCommentEmailToAdmins(comment.author, comment.email, expense.get, comment, request)
             } else {
-              sendCommentEmailToUser(comment.author, comment.email, expense.get, comment)
+              sendCommentEmailToUser(comment.author, comment.email, expense.get, comment, request)
             }
 
             Redirect(routes.Application.expensesShow(id)).flashing("success" -> "Your comment has been added.")
@@ -374,7 +371,7 @@ object Application extends Controller with MongoController with Secured {
       val objectId = BSONObjectID(id)
       val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
       futureExpense.flatMap { expense =>
-        sendSubmittedEmail(expense.get)
+        sendSubmittedEmail(expense.get, request)
         result
       }
 
@@ -387,7 +384,7 @@ object Application extends Controller with MongoController with Secured {
       val objectId = BSONObjectID(id)
       val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
       futureExpense.flatMap { expense =>
-        sendApprovedEmail(expense.get)
+        sendApprovedEmail(expense.get, request)
         result
       }
     }
@@ -398,7 +395,7 @@ object Application extends Controller with MongoController with Secured {
       val objectId = BSONObjectID(id)
       val futureExpense= expenses.find(BSONDocument("_id" -> objectId)).one[Expense]
       futureExpense.flatMap { expense =>
-        sendRejectedEmail(expense.get)
+        sendRejectedEmail(expense.get, request)
         result
       }
     }
@@ -541,12 +538,11 @@ object Application extends Controller with MongoController with Secured {
 
   // -- Emails
 
-  private def sendCommentEmailToAdmins(username: String, email: String, expense: Expense, comment: Comment) = { implicit request: RequestHeader =>
+  private def sendCommentEmailToAdmins(username: String, email: String, expense: Expense, comment: Comment, request: RequestHeader) = {
     try {
       val mail = new Email()
-      mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") from " + expense.author )
+      mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ") from " + expense.author)
       Play.configuration.getString("email.recipient").get.split(",").map { x =>
-        println("send email to " + x)
         mail.addTo(x)
       }
       mail.setFrom(expense.email)
@@ -554,7 +550,6 @@ object Application extends Controller with MongoController with Secured {
 
       // sends html
       mail.setBodyHtml(template.body)
-      println("send email  " + mail)
       MailerPlugin.send(mail)
     } catch {
       case e:Throwable => Logger.error("Error sending email " + e)
@@ -562,12 +557,11 @@ object Application extends Controller with MongoController with Secured {
   }
 
 
-  private def sendCommentEmailToUser(username: String, email: String, expense: Expense, comment: Comment) = { implicit request: RequestHeader =>
+  private def sendCommentEmailToUser(username: String, email: String, expense: Expense, comment: Comment, request: RequestHeader) = {
     try {
       val mail = new Email()
       mail.setSubject(username + " left a commment - expense (" + Time.ordinal(expense.startDate) + expense.startDate.toString(" MMM yyyy") + " - " + Time.ordinal(expense.endDate) + expense.endDate.toString(" MMM yyyy") + ")")
       mail.addTo(expense.email)
-      println("send email to " + expense.email)
       mail.setFrom(email)
       val template = views.html.emails.notifycommenttouser.render(username, expense, comment, request)
 
@@ -580,7 +574,7 @@ object Application extends Controller with MongoController with Secured {
   }
 
 
-  private def sendRejectedEmail(expense: Expense) = { implicit request: RequestHeader =>
+  private def sendRejectedEmail(expense: Expense, request: RequestHeader) = {
     try {
       val mail = new Email()
       val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
@@ -597,7 +591,7 @@ object Application extends Controller with MongoController with Secured {
     }
   }
 
-  private def sendSubmittedEmail(expense: Expense) = { implicit request: RequestHeader =>
+  private def sendSubmittedEmail(expense: Expense, request: RequestHeader) = {
     try {
       val mail = new Email()
       val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
@@ -617,7 +611,7 @@ object Application extends Controller with MongoController with Secured {
   }
 
 
-  private def sendApprovedEmail(expense: Expense) = { implicit request: RequestHeader =>
+  private def sendApprovedEmail(expense: Expense, request: RequestHeader) = {
     try {
       val mail = new Email()
       val fmt = new java.text.SimpleDateFormat(" MMM yyyy")
@@ -774,7 +768,6 @@ trait Secured {
     import scala.collection.JavaConversions._
     val users =  resultFeed.getEntries.toSet
     val filteredUsers = users.map( entry => entry.getTitle().getPlainText() + "@" + DOMAIN.get)
-    Logger.info(filteredUsers.mkString)
     filteredUsers.contains(email)
   }
 
