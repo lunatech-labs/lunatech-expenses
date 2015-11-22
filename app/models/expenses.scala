@@ -17,12 +17,12 @@ case class RecurringExpense (
   amount: Double,
   frequence: String,
   author: String
-) 
+)
 
 
 object RecurringExpense {
 
-   
+
    implicit object RecurringExpenseBSONReader extends BSONDocumentReader[RecurringExpense] {
     def read(doc: BSONDocument) =
       RecurringExpense(
@@ -43,7 +43,7 @@ object RecurringExpense {
         "author" -> recurringExpense.author)
   }
 }
- 
+
 case class Expense (
   id: Option[BSONObjectID],
   submitDate: DateTime,
@@ -159,7 +159,7 @@ object Expense {
         "end_date" -> BSONDateTime(expense.endDate.toDateTime(zone).getMillis),
         "items" -> expense.items,
         "comments" -> expense.comments,
-        "year" -> expense.startDate.getYear, // TODO: get the year from the start date
+        "year" -> expense.submitDate.getYear,
         "status_details" -> expense.statusDetails
       )
   }

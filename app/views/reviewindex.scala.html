@@ -29,7 +29,9 @@
     						  <li><a href="@routes.Application.adminIndexPerYear(year+1)"><i class="fa fa-chevron-right"></i></a></li>
     						</ul>
     	            	</div>
-	            	  <table class="table table-hover">
+
+                    <input type="text" class="search form-control pull-right" placeholder="Filter on author...">
+                  <table class="table table-hover">
 				        <thead>
 				          <tr>
 				            <th>#</th>
@@ -46,9 +48,9 @@
 				         @expenses.zipWithIndex.map { case (expense, index) =>
  						   <tr>
 				            <td class="number">@(index+1)</td>
-							<td><a href="@routes.Application.review(expense.id.get.stringify)">@expense.submitDate.toString("dd-MM-yyyy")</a></td>
+							<td><a href="@routes.Application.review(expense.id.get.stringify)">@Time.ordinal(expense.submitDate) @expense.submitDate.toString("MMM. yyyy")</a></td>
 				            <td><a href="@routes.Application.review(expense.id.get.stringify)">@Time.ordinal(expense.startDate) @expense.startDate.toString("MMM. yyyy") - @Time.ordinal(expense.endDate) @expense.endDate.toString("MMM. yyyy")</a></td>
-				            <td><a href="@routes.Application.review(expense.id.get.stringify)">@expense.author</a></td>
+				            <td><a class="author" href="@routes.Application.review(expense.id.get.stringify)">@expense.author</a></td>
 				            <td class="right"><a href="@routes.Application.review(expense.id.get.stringify)">@expense.totalAmount €</a></td>
 				            <td>@(expense.status match {
 				            	case "submitted" => <span class="label label-info">submitted</span>
@@ -86,10 +88,19 @@
 		      </div>
 		    </div><!-- /.modal-content -->
 		  </div><!-- /.modal-dialog -->
-		</div><!-- /.modal -->
-		<script>
-		$("div.modal-body").emoticonize();
-		</script>
+    </div><!-- /.modal -->
+    <script type="text/javascript">
+
+    $(function() {
+      $("div.modal-body").emoticonize();
+
+      $(".search").on("keyup", function(evt) {
+        var searchValue = $( this ).val() ;
+        $(".table tr").show();
+        $(".table td a.author:not(:contains('" + searchValue + "'))" ).parent().parent().hide();
+      });
+    });
+    </script>
 
 	</div>
 </div>
