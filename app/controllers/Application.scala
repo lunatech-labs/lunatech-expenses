@@ -29,7 +29,10 @@ import com.google.gdata.client.authn.oauth.OAuthParameters.OAuthType
 import com.google.gdata.data.appsforyourdomain.provisioning.UserEntry
 import com.google.gdata.data.appsforyourdomain.provisioning.UserFeed
 
-import com.lunatech.openconnect.Authenticate
+
+import java.io.IOException
+import java.math.BigInteger
+import java.security.SecureRandom
 
 import reactivemongo.api.gridfs.{ // ReactiveMongo GridFS
   DefaultFileToSave, FileToSave, GridFS, ReadFile
@@ -688,8 +691,10 @@ object Application extends Controller with MongoController with Secured {
        val response = Authenticate.authenticateToken(code, id_token, access_token)
 
        response.map {
-           case Left(parameters) => Redirect(routes.Application.index).withSession(parameters.toArray: _*)
-           case Right(message) => Redirect(routes.Application.login).withNewSession.flashing("error" -> message.toString())
+           case Left(tokenInfo) => Redirect(routes.Application.index).withSession(Seq("email" -> tokenInfo.getEmail).toArray: _*)
+           case Right(message) => {
+             Redirect(routes.Application.login).withNewSession.flashing("error" -> message.toString())
+           }
          }
        }
 
@@ -705,6 +710,104 @@ object Application extends Controller with MongoController with Secured {
   }
 
 }
+
+object Authenticate {
+
+  val GOOGLE_CLIENTID = "google.clientId"
+  val GOOGLE_DOMAIN = "google.domain"
+  val GOOGLE_SECRET = "google.secret"
+
+  val GOOGLE_CONF = "https://accounts.google.com/.well-known/openid-configuration"
+  val REVOKE_ENDPOINT = "revocation_endpoint"
+
+  val ERROR_GENERIC: String = "Something went wrong, please try again later"
+
+  def generateState: String = new BigInteger(130, new SecureRandom()).toString(32)
+
+  /**
+   * Accepts an authResult['code'], authResult['id_token'], and authResult['access_token'] as supplied by Google.
+   * Returns authentication email and token parameters if successful, otherwise revokes user-granted permissions and returns an error.
+   */
+  def authenticateToken(code: String, id_token: String, accessToken: String): Future[Either[Tokeninfo, AuthenticationError]] = {
+
+    val clientId: String = Play.configuration.getString("google.clientId").get
+    val secret: String = Play.configuration.getString("google.secret").get
+    val domain: String = Play.configuration.getString("google.domain").get
+
+    try {
+
+      val transport: NetHttpTransport = new NetHttpTransport()
+      val jsonFactory: JacksonFactory = new JacksonFactory()
+
+      val tokenResponse: GoogleTokenResponse = new GoogleAuthorizationCodeTokenRequest(
+        transport, jsonFactory, clientId, secret, code, "postmessage"
+      ).execute()
+
+      val credential: GoogleCredential = new GoogleCredential.Builder()
+        .setJsonFactory(jsonFactory)
+        .setTransport(transport)
+        .setClientSecrets(clientId, secret).build()
+        .setFromTokenResponse(tokenResponse)
+
+      val oauth2: Oauth2 = new Oauth2.Builder(
+        transport, jsonFactory, credential).build()
+
+      val tokenInfo: Tokeninfo = oauth2.tokeninfo().setAccessToken(credential.getAccessToken).execute()
+
+
+      if (tokenInfo.containsKey("error")) {
+        play.Logger.error(s"Authorizationtoken has been denied by Google")
+        Future(Right(AuthenticationError("Authorizationtoken has been denied by Google", Some(tokenInfo))))
+      } else if (!tokenInfo.getIssuedTo.equals(clientId)) {
+        play.Logger.error(s"client_id doesn't match expected client_id")
+        Future(Right(AuthenticationError("client_id doesn't match expected client_id", Some(tokenInfo))))
+      } else if (isOnWhiteList(tokenInfo.getEmail)) {
+        Future(Left(tokenInfo))
+      } else {
+        Future(Right(AuthenticationError("Unable to request authorization to Google ", Some(tokenInfo))))
+      }
+    } catch {
+      case tre: TokenResponseException => {
+        play.Logger.error("Unable to request authorization to Google " + tre)
+        Future(Right(AuthenticationError("Unable to request authorization to Google " + tre, None)))
+      }
+      case ioe: IOException => {
+        play.Logger.error("Unable to request authorization to Google " + ioe)
+        Future(Right(AuthenticationError("Unable to request authorization to Google " + ioe, None)))
+      }
+    }
+  }
+
+  def isOnWhiteList(email:String) = {
+    import play.api.Play.current
+    val CONSUMER_KEY = Play.configuration.getString("google.key")
+    val CONSUMER_SECRET =  Play.configuration.getString("google.secret")
+    val DOMAIN =  Play.configuration.getString("google.domain")
+
+    val oauthParameters = new GoogleOAuthParameters()
+    oauthParameters.setOAuthConsumerKey(CONSUMER_KEY.get)
+    oauthParameters.setOAuthConsumerSecret(CONSUMER_SECRET.get)
+    oauthParameters.setOAuthType(OAuthType.TWO_LEGGED_OAUTH)
+    val signer = new OAuthHmacSha1Signer()
+    val feedUrl = new URL("https://apps-apis.google.com/a/feeds/" + DOMAIN.get + "/user/2.0")
+
+    val service = new UserService("ProvisiongApiClient")
+    service.setOAuthCredentials(oauthParameters, signer)
+    service.useSsl()
+    val resultFeed = service.getFeed(feedUrl,  classOf[UserFeed])
+
+    import scala.collection.JavaConversions._
+    val users =  resultFeed.getEntries.toSet
+
+    val filteredUsers = users.map( entry => entry.getTitle().getPlainText() + "@" + DOMAIN.get)
+    val whitelist = Play.configuration.getString("whitelist").getOrElse("").split(",")
+    (filteredUsers ++ whitelist).contains(email)
+  }
+}
+
+
+
+case class AuthenticationError(message: String, tokenInfo: Option[Tokeninfo])
 
 object Secure {
 
@@ -745,31 +848,5 @@ trait Secured {
    Security.Authenticated(username, onUnauthorized) { case (username, name) =>
      Action.async(request => f(username, name)(request))
  }
-
-
-
-  def isOnWhiteList(email:String) = {
-    import play.api.Play.current
-    val CONSUMER_KEY = Play.configuration.getString("google.key")
-    val CONSUMER_SECRET =  Play.configuration.getString("google.secret")
-    val DOMAIN =  Play.configuration.getString("google.domain")
-
-    val oauthParameters = new GoogleOAuthParameters()
-    oauthParameters.setOAuthConsumerKey(CONSUMER_KEY.get)
-    oauthParameters.setOAuthConsumerSecret(CONSUMER_SECRET.get)
-    oauthParameters.setOAuthType(OAuthType.TWO_LEGGED_OAUTH)
-    val signer = new OAuthHmacSha1Signer()
-    val feedUrl = new URL("https://apps-apis.google.com/a/feeds/" + DOMAIN.get + "/user/2.0")
-
-    val service = new UserService("ProvisiongApiClient")
-    service.setOAuthCredentials(oauthParameters, signer)
-    service.useSsl()
-    val resultFeed = service.getFeed(feedUrl,  classOf[UserFeed])
-
-    import scala.collection.JavaConversions._
-    val users =  resultFeed.getEntries.toSet
-    val filteredUsers = users.map( entry => entry.getTitle().getPlainText() + "@" + DOMAIN.get)
-    filteredUsers.contains(email)
-  }
 
 }
