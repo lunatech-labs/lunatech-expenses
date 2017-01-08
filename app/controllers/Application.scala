@@ -732,8 +732,7 @@ object Authenticate {
 
     val clientId: String = Play.configuration.getString("google.clientId").get
     val secret: String = Play.configuration.getString("google.secret").get
-    val domain: String = Play.configuration.getString("google.domain").get
-
+  
     try {
 
       val transport: NetHttpTransport = new NetHttpTransport()
@@ -779,8 +778,9 @@ object Authenticate {
   }
 
   def isOnWhiteList(email:String) = {
+    val DOMAIN: String = Play.configuration.getString("google.domain").get
 
-    val filteredUsers = Seq(email + "@" + DOMAIN.get)
+    val filteredUsers = Seq(email + "@" + DOMAIN)
     val whitelist = Play.configuration.getString("whitelist").getOrElse("").split(",")
     (filteredUsers ++ whitelist).contains(email)
   }
