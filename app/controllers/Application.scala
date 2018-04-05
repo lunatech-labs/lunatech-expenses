@@ -778,8 +778,6 @@ object Authenticate {
   }
 
   def isOnWhiteList(email:String) = {
-    val DOMAIN: String = Play.configuration.getString("google.domain").get
-
     val filteredUsers = Seq(email)
     val whitelist = Play.configuration.getString("whitelist").getOrElse("").split(",")
     (filteredUsers ++ whitelist).contains(email)
