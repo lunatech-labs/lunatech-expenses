@@ -778,10 +778,30 @@ object Authenticate {
   }
 
   def isOnWhiteList(email:String) = {
-    val filteredUsers = Seq(email)
-    val whitelist = Play.configuration.getString("whitelist").getOrElse("").split(",")
-    (filteredUsers ++ whitelist).contains(email)
+    import play.api.Play.current
+    val CONSUMER_KEY = Play.configuration.getString("google.key")
+    val CONSUMER_SECRET =  Play.configuration.getString("google.secret")
+    val DOMAIN =  Play.configuration.getString("google.domain")
+
+    val oauthParameters = new GoogleOAuthParameters()
+    oauthParameters.setOAuthConsumerKey(CONSUMER_KEY.get)
+    oauthParameters.setOAuthConsumerSecret(CONSUMER_SECRET.get)
+    oauthParameters.setOAuthType(OAuthType.TWO_LEGGED_OAUTH)
+    val signer = new OAuthHmacSha1Signer()
+    val feedUrl = new URL("https://apps-apis.google.com/a/feeds/" + DOMAIN.get + "/user/2.0")
+
+    val service = new UserService("ProvisiongApiClient")
+    service.setOAuthCredentials(oauthParameters, signer)
+    service.useSsl()
+    val resultFeed = service.getFeed(feedUrl, classOf[UserFeed])
+
+    import scala.collection.JavaConversions._
+    val users =  resultFeed.getEntries.toSet
+    val filteredUsers = users.map( entry => entry.getTitle().getPlainText() + "@" + DOMAIN.get)
+
+    filteredUsers.contains(email)
   }
+
 }
 
 
