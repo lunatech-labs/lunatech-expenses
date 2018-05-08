@@ -798,7 +798,7 @@ object Authenticate {
     import scala.collection.JavaConversions._
     val users =  resultFeed.getEntries.toSet
     val filteredUsers = users.map( entry => entry.getTitle().getPlainText() + "@" + DOMAIN.get)
-    Logger.info(s"filteredUsers $ filteredUsers")
+    Logger.info(s"filteredUsers $filteredUsers")
     filteredUsers.contains(email)
   }
 
