@@ -788,7 +788,7 @@ object Authenticate {
     oauthParameters.setOAuthConsumerSecret(CONSUMER_SECRET.get)
     oauthParameters.setOAuthType(OAuthType.TWO_LEGGED_OAUTH)
     val signer = new OAuthHmacSha1Signer()
-    val feedUrl = new URL("https://apps-apis.google.com/a/feeds/" + DOMAIN.get + "/user/2.0")
+    val feedUrl = new URL(" https://www.googleapis.com/admin/directory/v1/users?domain=" + DOMAIN.get +"&maxResults=200")
 
     val service = new UserService("ProvisiongApiClient")
     service.setOAuthCredentials(oauthParameters, signer)
@@ -798,7 +798,7 @@ object Authenticate {
     import scala.collection.JavaConversions._
     val users =  resultFeed.getEntries.toSet
     val filteredUsers = users.map( entry => entry.getTitle().getPlainText() + "@" + DOMAIN.get)
-    Logger.info(s"filteredUsers $filteredUsers")
+    Logger.info(s"filteredUsers $ filteredUsers")
     filteredUsers.contains(email)
   }
 
